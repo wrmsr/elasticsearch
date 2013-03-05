@@ -26,6 +26,7 @@ import com.google.common.cache.Weigher;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.common.inject.Inject;
@@ -42,6 +43,8 @@ import org.elasticsearch.index.cache.filter.FilterCache;
 import org.elasticsearch.index.cache.filter.support.CacheKeyFilter;
 import org.elasticsearch.index.settings.IndexSettings;
 import org.elasticsearch.indices.cache.filter.IndicesFilterCache;
+import org.elasticsearch.common.lucene.docset.FixedBitDocSet;
+import org.apache.lucene.util.SortedVIntList;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentMap;
@@ -160,6 +163,39 @@ public class WeightedFilterCache extends AbstractIndexComponent implements Filte
                 }
 
                 cacheValue = DocSets.cacheable(reader, filter.getDocIdSet(reader));
+
+                if (cacheValue instanceof FixedBitDocSet) {
+                    FixedBitDocSet bitDocSet = (FixedBitDocSet)cacheValue;
+                    if ((bitDocSet.set().cardinality() * 4) < bitDocSet.set().length()) {
+                    final SortedVIntList listDocSet = new SortedVIntList(bitDocSet.iterator());
+                        if(listDocSet.getByteSize() < bitDocSet.sizeInBytes()) {
+                            DocSet wrappedListDocSet = new DocSet() {
+                                @Override
+                                public boolean get(int doc) {
+                                    throw new UnsupportedOperationException();
+                                }
+
+                                @Override
+                                public int length() {
+                                    return listDocSet.size();
+                                }
+
+                                @Override
+                                public long sizeInBytes() {
+                                    return (long)listDocSet.getByteSize();
+                                }
+
+                                @Override
+                                public DocIdSetIterator iterator() throws IOException {
+                                    return listDocSet.iterator();
+                                }
+                            };
+
+                            cacheValue = wrappedListDocSet;
+                        }
+                    }
+                }
+
                 // we might put the same one concurrently, that's fine, it will be replaced and the removal
                 // will be called
                 cache.totalMetric.inc(cacheValue.sizeInBytes());
