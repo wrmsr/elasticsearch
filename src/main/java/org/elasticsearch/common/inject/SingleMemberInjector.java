@@ -24,7 +24,6 @@ import org.elasticsearch.common.inject.spi.InjectionPoint;
  * Injects a field or method of a given object.
  */
 interface SingleMemberInjector {
-    void inject(Errors errors, InternalContext context, Object o);
-
-    InjectionPoint getInjectionPoint();
+  void inject(Errors errors, InternalContext context, Object o);
+  InjectionPoint getInjectionPoint();
 }

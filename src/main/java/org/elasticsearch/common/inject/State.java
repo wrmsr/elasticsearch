@@ -16,13 +16,12 @@
 
 package org.elasticsearch.common.inject;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.elasticsearch.common.inject.internal.BindingImpl;
 import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ImmutableList;
+import org.elasticsearch.common.inject.internal.ImmutableSet;
 import org.elasticsearch.common.inject.internal.MatcherAndConverter;
 import org.elasticsearch.common.inject.spi.TypeListenerBinding;
-
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
@@ -35,124 +34,130 @@ import java.util.Map;
  */
 interface State {
 
-    static final State NONE = new State() {
-        public State parent() {
-            throw new UnsupportedOperationException();
-        }
+  static final State NONE = new State() {
+    public State parent() {
+      throw new UnsupportedOperationException();
+    }
 
-        public <T> BindingImpl<T> getExplicitBinding(Key<T> key) {
-            return null;
-        }
+    public <T> BindingImpl<T> getExplicitBinding(Key<T> key) {
+      return null;
+    }
 
-        public Map<Key<?>, Binding<?>> getExplicitBindingsThisLevel() {
-            throw new UnsupportedOperationException();
-        }
+    public Map<Key<?>, Binding<?>> getExplicitBindingsThisLevel() {
+      throw new UnsupportedOperationException();
+    }
 
-        public void putBinding(Key<?> key, BindingImpl<?> binding) {
-            throw new UnsupportedOperationException();
-        }
+    public void putBinding(Key<?> key, BindingImpl<?> binding) {
+      throw new UnsupportedOperationException();
+    }
 
-        public Scope getScope(Class<? extends Annotation> scopingAnnotation) {
-            return null;
-        }
+    public Scope getScope(Class<? extends Annotation> scopingAnnotation) {
+      return null;
+    }
 
-        public void putAnnotation(Class<? extends Annotation> annotationType, Scope scope) {
-            throw new UnsupportedOperationException();
-        }
+    public void putAnnotation(Class<? extends Annotation> annotationType, Scope scope) {
+      throw new UnsupportedOperationException();
+    }
 
-        public void addConverter(MatcherAndConverter matcherAndConverter) {
-            throw new UnsupportedOperationException();
-        }
+    public void addConverter(MatcherAndConverter matcherAndConverter) {
+      throw new UnsupportedOperationException();
+    }
 
-        public MatcherAndConverter getConverter(String stringValue, TypeLiteral<?> type, Errors errors,
-                                                Object source) {
-            throw new UnsupportedOperationException();
-        }
+    public MatcherAndConverter getConverter(String stringValue, TypeLiteral<?> type, Errors errors,
+        Object source) {
+      throw new UnsupportedOperationException();
+    }
 
-        public Iterable<MatcherAndConverter> getConvertersThisLevel() {
-            return ImmutableSet.of();
-        }
+    public Iterable<MatcherAndConverter> getConvertersThisLevel() {
+      return ImmutableSet.of();
+    }
 
-        public void addTypeListener(TypeListenerBinding typeListenerBinding) {
-            throw new UnsupportedOperationException();
-        }
+    /*if[AOP]*/
+    public void addMethodAspect(MethodAspect methodAspect) {
+      throw new UnsupportedOperationException();
+    }
 
-        public List<TypeListenerBinding> getTypeListenerBindings() {
-            return ImmutableList.of();
-        }
+    public ImmutableList<MethodAspect> getMethodAspects() {
+      return ImmutableList.of();
+    }
+    /*end[AOP]*/
 
-        public void blacklist(Key<?> key) {
-        }
+    public void addTypeListener(TypeListenerBinding typeListenerBinding) {
+      throw new UnsupportedOperationException();
+    }
 
-        public boolean isBlacklisted(Key<?> key) {
-            return true;
-        }
+    public List<TypeListenerBinding> getTypeListenerBindings() {
+      return ImmutableList.of();
+    }
 
-        @Override
-        public void clearBlacklisted() {
-        }
+    public void blacklist(Key<?> key) {
+    }
 
-        public Object lock() {
-            throw new UnsupportedOperationException();
-        }
-    };
+    public boolean isBlacklisted(Key<?> key) {
+      return true;
+    }
 
-    State parent();
+    public Object lock() {
+      throw new UnsupportedOperationException();
+    }
 
-    /**
-     * Gets a binding which was specified explicitly in a module, or null.
-     */
-    <T> BindingImpl<T> getExplicitBinding(Key<T> key);
+      public void clearBlacklisted() {
+      }
 
-    /**
-     * Returns the explicit bindings at this level only.
-     */
-    Map<Key<?>, Binding<?>> getExplicitBindingsThisLevel();
+  };
 
-    void putBinding(Key<?> key, BindingImpl<?> binding);
+  State parent();
 
-    /**
-     * Returns the matching scope, or null.
-     */
-    Scope getScope(Class<? extends Annotation> scopingAnnotation);
+  /** Gets a binding which was specified explicitly in a module, or null. */
+  <T> BindingImpl<T> getExplicitBinding(Key<T> key);
 
-    void putAnnotation(Class<? extends Annotation> annotationType, Scope scope);
+  /** Returns the explicit bindings at this level only. */
+  Map<Key<?>, Binding<?>> getExplicitBindingsThisLevel();
 
-    void addConverter(MatcherAndConverter matcherAndConverter);
+  void putBinding(Key<?> key, BindingImpl<?> binding);
 
-    /**
-     * Returns the matching converter for {@code type}, or null if none match.
-     */
-    MatcherAndConverter getConverter(
-            String stringValue, TypeLiteral<?> type, Errors errors, Object source);
+  /** Returns the matching scope, or null. */
+  Scope getScope(Class<? extends Annotation> scopingAnnotation);
 
-    /**
-     * Returns all converters at this level only.
-     */
-    Iterable<MatcherAndConverter> getConvertersThisLevel();
+  void putAnnotation(Class<? extends Annotation> annotationType, Scope scope);
 
-    void addTypeListener(TypeListenerBinding typeListenerBinding);
+  void addConverter(MatcherAndConverter matcherAndConverter);
 
-    List<TypeListenerBinding> getTypeListenerBindings();
+  /** Returns the matching converter for {@code type}, or null if none match. */
+  MatcherAndConverter getConverter(
+      String stringValue, TypeLiteral<?> type, Errors errors, Object source);
 
-    /**
-     * Forbids the corresponding injector from creating a binding to {@code key}. Child injectors
-     * blacklist their bound keys on their parent injectors to prevent just-in-time bindings on the
-     * parent injector that would conflict.
-     */
-    void blacklist(Key<?> key);
+  /** Returns all converters at this level only. */
+  Iterable<MatcherAndConverter> getConvertersThisLevel();
 
-    /**
-     * Returns true if {@code key} is forbidden from being bound in this injector. This indicates that
-     * one of this injector's descendent's has bound the key.
-     */
-    boolean isBlacklisted(Key<?> key);
+  /*if[AOP]*/
+  void addMethodAspect(MethodAspect methodAspect);
 
-    /**
-     * Returns the shared lock for all injector data. This is a low-granularity, high-contention lock
-     * to be used when reading mutable data (ie. just-in-time bindings, and binding blacklists).
-     */
-    Object lock();
+  ImmutableList<MethodAspect> getMethodAspects();
+  /*end[AOP]*/
+
+  void addTypeListener(TypeListenerBinding typeListenerBinding);
+
+  List<TypeListenerBinding> getTypeListenerBindings();
+
+  /**
+   * Forbids the corresponding injector from creating a binding to {@code key}. Child injectors
+   * blacklist their bound keys on their parent injectors to prevent just-in-time bindings on the
+   * parent injector that would conflict.
+   */
+  void blacklist(Key<?> key);
+
+  /**
+   * Returns true if {@code key} is forbidden from being bound in this injector. This indicates that
+   * one of this injector's descendent's has bound the key.
+   */
+  boolean isBlacklisted(Key<?> key);
+
+  /**
+   * Returns the shared lock for all injector data. This is a low-granularity, high-contention lock
+   * to be used when reading mutable data (ie. just-in-time bindings, and binding blacklists).
+   */
+  Object lock();
 
     // ES_GUICE: clean blacklist keys
     void clearBlacklisted();

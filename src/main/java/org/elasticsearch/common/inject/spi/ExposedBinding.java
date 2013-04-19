@@ -16,8 +16,8 @@
 
 package org.elasticsearch.common.inject.spi;
 
-import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.Binding;
+import org.elasticsearch.common.inject.Binder;
 
 /**
  * A binding to a key exposed from an enclosed private environment.
@@ -27,13 +27,13 @@ import org.elasticsearch.common.inject.Binding;
  */
 public interface ExposedBinding<T> extends Binding<T>, HasDependencies {
 
-    /**
-     * Returns the enclosed environment that holds the original binding.
-     */
-    PrivateElements getPrivateElements();
+  /**
+   * Returns the enclosed environment that holds the original binding.
+   */
+  PrivateElements getPrivateElements();
 
-    /**
-     * Unsupported. Always throws {@link UnsupportedOperationException}.
-     */
-    void applyTo(Binder binder);
+  /**
+   * Unsupported. Always throws {@link UnsupportedOperationException}.
+   */
+  void applyTo(Binder binder);
 }

@@ -17,12 +17,10 @@
 package org.elasticsearch.common.inject.name;
 
 import org.elasticsearch.common.inject.BindingAnnotation;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.lang.annotation.Target;
 
 /**
  * Annotates named things.
@@ -30,8 +28,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * @author crazybob@google.com (Bob Lee)
  */
 @Retention(RUNTIME)
-@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+@Target({ ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD })
 @BindingAnnotation
 public @interface Named {
-    String value();
+  String value();
 }

@@ -16,17 +16,15 @@
 
 package org.elasticsearch.common.inject.spi;
 
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
 import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ImmutableList;
+import org.elasticsearch.common.inject.internal.Objects;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import org.elasticsearch.common.inject.internal.SourceProvider;
-
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.List;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * An error message and the context in which it occured. Messages are usually created internally by
@@ -42,101 +40,92 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author crazybob@google.com (Bob Lee)
  */
 public final class Message implements Serializable, Element {
-    private final String message;
-    private final Throwable cause;
-    private final List<Object> sources;
+  private final String message;
+  private final Throwable cause;
+  private final List<Object> sources;
 
-    /**
-     * @since 2.0
-     */
-    public Message(List<Object> sources, String message, Throwable cause) {
-        this.sources = ImmutableList.copyOf(sources);
-        this.message = checkNotNull(message, "message");
-        this.cause = cause;
+  /**
+   * @since 2.0
+   */
+  public Message(List<Object> sources, String message, Throwable cause) {
+    this.sources = ImmutableList.copyOf(sources);
+    this.message = checkNotNull(message, "message");
+    this.cause = cause;
+  }
+
+  public Message(Object source, String message) {
+    this(ImmutableList.of(source), message, null);
+  }
+
+  public Message(String message) {
+    this(ImmutableList.of(), message, null);
+  }
+
+  public String getSource() {
+    return sources.isEmpty()
+        ? SourceProvider.UNKNOWN_SOURCE.toString()
+        : Errors.convert(sources.get(sources.size() - 1)).toString();
+  }
+
+  /** @since 2.0 */
+  public List<Object> getSources() {
+    return sources;
+  }
+
+  /**
+   * Gets the error message text.
+   */
+  public String getMessage() {
+    return message;
+  }
+
+  /** @since 2.0 */
+  public <T> T acceptVisitor(ElementVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
+
+  /**
+   * Returns the throwable that caused this message, or {@code null} if this
+   * message was not caused by a throwable.
+   *
+   * @since 2.0
+   */
+  public Throwable getCause() {
+    return cause;
+  }
+
+  @Override public String toString() {
+    return message;
+  }
+
+  @Override public int hashCode() {
+    return message.hashCode();
+  }
+
+  @Override public boolean equals(Object o) {
+    if (!(o instanceof Message)) {
+      return false;
     }
+    Message e = (Message) o;
+    return message.equals(e.message) && Objects.equal(cause, e.cause) && sources.equals(e.sources);
+  }
 
-    public Message(Object source, String message) {
-        this(ImmutableList.of(source), message, null);
+  /** @since 2.0 */
+  public void applyTo(Binder binder) {
+    binder.withSource(getSource()).addError(this);
+  }
+
+  /**
+   * When serialized, we eagerly convert sources to strings. This hurts our formatting, but it
+   * guarantees that the receiving end will be able to read the message.
+   */
+  private Object writeReplace() throws ObjectStreamException {
+    Object[] sourcesAsStrings = sources.toArray();
+    for (int i = 0; i < sourcesAsStrings.length; i++) {
+      sourcesAsStrings[i] = Errors.convert(sourcesAsStrings[i]).toString();
     }
+    return new Message(ImmutableList.of(sourcesAsStrings), message, cause);
+  }
 
-    public Message(String message) {
-        this(ImmutableList.of(), message, null);
-    }
-
-    public String getSource() {
-        return sources.isEmpty()
-                ? SourceProvider.UNKNOWN_SOURCE.toString()
-                : Errors.convert(sources.get(sources.size() - 1)).toString();
-    }
-
-    /**
-     * @since 2.0
-     */
-    public List<Object> getSources() {
-        return sources;
-    }
-
-    /**
-     * Gets the error message text.
-     */
-    public String getMessage() {
-        return message;
-    }
-
-    /**
-     * @since 2.0
-     */
-    public <T> T acceptVisitor(ElementVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
-
-    /**
-     * Returns the throwable that caused this message, or {@code null} if this
-     * message was not caused by a throwable.
-     *
-     * @since 2.0
-     */
-    public Throwable getCause() {
-        return cause;
-    }
-
-    @Override
-    public String toString() {
-        return message;
-    }
-
-    @Override
-    public int hashCode() {
-        return message.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Message)) {
-            return false;
-        }
-        Message e = (Message) o;
-        return message.equals(e.message) && Objects.equal(cause, e.cause) && sources.equals(e.sources);
-    }
-
-    /**
-     * @since 2.0
-     */
-    public void applyTo(Binder binder) {
-        binder.withSource(getSource()).addError(this);
-    }
-
-    /**
-     * When serialized, we eagerly convert sources to strings. This hurts our formatting, but it
-     * guarantees that the receiving end will be able to read the message.
-     */
-    private Object writeReplace() throws ObjectStreamException {
-        Object[] sourcesAsStrings = sources.toArray();
-        for (int i = 0; i < sourcesAsStrings.length; i++) {
-            sourcesAsStrings[i] = Errors.convert(sourcesAsStrings[i]).toString();
-        }
-        return new Message(ImmutableList.copyOf(sourcesAsStrings), message, cause);
-    }
-
-    private static final long serialVersionUID = 0;
+  private static final long serialVersionUID = 0;
 }

@@ -16,7 +16,6 @@
 
 package org.elasticsearch.common.inject.internal;
 
-import com.google.common.collect.ImmutableSet;
 import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.inject.Key;
@@ -24,55 +23,53 @@ import org.elasticsearch.common.inject.spi.BindingTargetVisitor;
 import org.elasticsearch.common.inject.spi.Dependency;
 import org.elasticsearch.common.inject.spi.ExposedBinding;
 import org.elasticsearch.common.inject.spi.PrivateElements;
-
 import java.util.Set;
 
 public class ExposedBindingImpl<T> extends BindingImpl<T> implements ExposedBinding<T> {
 
-    private final PrivateElements privateElements;
+  private final PrivateElements privateElements;
 
-    public ExposedBindingImpl(Injector injector, Object source, Key<T> key,
-                              InternalFactory<T> factory, PrivateElements privateElements) {
-        super(injector, key, source, factory, Scoping.UNSCOPED);
-        this.privateElements = privateElements;
-    }
+  public ExposedBindingImpl(Injector injector, Object source, Key<T> key,
+      InternalFactory<T> factory, PrivateElements privateElements) {
+    super(injector, key, source, factory, Scoping.UNSCOPED);
+    this.privateElements = privateElements;
+  }
 
-    public ExposedBindingImpl(Object source, Key<T> key, Scoping scoping,
-                              PrivateElements privateElements) {
-        super(source, key, scoping);
-        this.privateElements = privateElements;
-    }
+  public ExposedBindingImpl(Object source, Key<T> key, Scoping scoping,
+      PrivateElements privateElements) {
+    super(source, key, scoping);
+    this.privateElements = privateElements;
+  }
 
-    public <V> V acceptTargetVisitor(BindingTargetVisitor<? super T, V> visitor) {
-        return visitor.visit(this);
-    }
+  public <V> V acceptTargetVisitor(BindingTargetVisitor<? super T, V> visitor) {
+    return visitor.visit(this);
+  }
 
-    public Set<Dependency<?>> getDependencies() {
-        return ImmutableSet.<Dependency<?>>of(Dependency.get(Key.get(Injector.class)));
-    }
+  public Set<Dependency<?>> getDependencies() {
+    return ImmutableSet.<Dependency<?>>of(Dependency.get(Key.get(Injector.class)));
+  }
 
-    public PrivateElements getPrivateElements() {
-        return privateElements;
-    }
+  public PrivateElements getPrivateElements() {
+    return privateElements;
+  }
 
-    public BindingImpl<T> withScoping(Scoping scoping) {
-        return new ExposedBindingImpl<T>(getSource(), getKey(), scoping, privateElements);
-    }
+  public BindingImpl<T> withScoping(Scoping scoping) {
+    return new ExposedBindingImpl<T>(getSource(), getKey(), scoping, privateElements);
+  }
 
-    public ExposedBindingImpl<T> withKey(Key<T> key) {
-        return new ExposedBindingImpl<T>(getSource(), key, getScoping(), privateElements);
-    }
+  public ExposedBindingImpl<T> withKey(Key<T> key) {
+    return new ExposedBindingImpl<T>(getSource(), key, getScoping(), privateElements);
+  }
 
-    @Override
-    public String toString() {
-        return new ToStringBuilder(ExposedBinding.class)
-                .add("key", getKey())
-                .add("source", getSource())
-                .add("privateElements", privateElements)
-                .toString();
-    }
+  @Override public String toString() {
+    return new ToStringBuilder(ExposedBinding.class)
+        .add("key", getKey())
+        .add("source", getSource())
+        .add("privateElements", privateElements)
+        .toString();
+  }
 
-    public void applyTo(Binder binder) {
-        throw new UnsupportedOperationException("This element represents a synthetic binding.");
-    }
+  public void applyTo(Binder binder) {
+    throw new UnsupportedOperationException("This element represents a synthetic binding.");
+  }
 }

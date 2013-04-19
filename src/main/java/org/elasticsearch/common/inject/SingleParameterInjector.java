@@ -26,50 +26,50 @@ import org.elasticsearch.common.inject.spi.Dependency;
  * Resolves a single parameter, to be used in a constructor or method invocation.
  */
 class SingleParameterInjector<T> {
-    private static final Object[] NO_ARGUMENTS = {};
+  private static final Object[] NO_ARGUMENTS = {}; 
 
-    private final Dependency<T> dependency;
-    private final InternalFactory<? extends T> factory;
+  private final Dependency<T> dependency;
+  private final InternalFactory<? extends T> factory;
 
-    SingleParameterInjector(Dependency<T> dependency, InternalFactory<? extends T> factory) {
-        this.dependency = dependency;
-        this.factory = factory;
+  SingleParameterInjector(Dependency<T> dependency, InternalFactory<? extends T> factory) {
+    this.dependency = dependency;
+    this.factory = factory;
+  }
+
+  private T inject(Errors errors, InternalContext context) throws ErrorsException {
+    context.setDependency(dependency);
+    try {
+      return factory.get(errors.withSource(dependency), context, dependency);
+    } finally {
+      context.setDependency(null);
+    }
+  }
+
+  /**
+   * Returns an array of parameter values.
+   */
+  static Object[] getAll(Errors errors, InternalContext context,
+      SingleParameterInjector<?>[] parameterInjectors) throws ErrorsException {
+    if (parameterInjectors == null) {
+      return NO_ARGUMENTS;
     }
 
-    private T inject(Errors errors, InternalContext context) throws ErrorsException {
-        context.setDependency(dependency);
-        try {
-            return factory.get(errors.withSource(dependency), context, dependency);
-        } finally {
-            context.setDependency(null);
-        }
+    int numErrorsBefore = errors.size();
+
+    int size = parameterInjectors.length;
+    Object[] parameters = new Object[size];
+
+    // optimization: use manual for/each to save allocating an iterator here  
+    for (int i = 0; i < size; i++) {
+      SingleParameterInjector<?> parameterInjector = parameterInjectors[i];
+      try {
+        parameters[i] = parameterInjector.inject(errors, context);
+      } catch (ErrorsException e) {
+        errors.merge(e.getErrors());
+      }
     }
 
-    /**
-     * Returns an array of parameter values.
-     */
-    static Object[] getAll(Errors errors, InternalContext context,
-                           SingleParameterInjector<?>[] parameterInjectors) throws ErrorsException {
-        if (parameterInjectors == null) {
-            return NO_ARGUMENTS;
-        }
-
-        int numErrorsBefore = errors.size();
-
-        int size = parameterInjectors.length;
-        Object[] parameters = new Object[size];
-
-        // optimization: use manual for/each to save allocating an iterator here
-        for (int i = 0; i < size; i++) {
-            SingleParameterInjector<?> parameterInjector = parameterInjectors[i];
-            try {
-                parameters[i] = parameterInjector.inject(errors, context);
-            } catch (ErrorsException e) {
-                errors.merge(e.getErrors());
-            }
-        }
-
-        errors.throwIfNewErrors(numErrorsBefore);
-        return parameters;
-    }
+    errors.throwIfNewErrors(numErrorsBefore);
+    return parameters;
+  }
 }

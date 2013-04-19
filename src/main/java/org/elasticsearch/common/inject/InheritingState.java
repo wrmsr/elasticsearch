@@ -16,122 +16,137 @@
 
 package org.elasticsearch.common.inject;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.elasticsearch.common.inject.internal.BindingImpl;
 import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ImmutableList;
+import org.elasticsearch.common.inject.internal.Lists;
+import org.elasticsearch.common.inject.internal.Maps;
 import org.elasticsearch.common.inject.internal.MatcherAndConverter;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import org.elasticsearch.common.inject.spi.TypeListenerBinding;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * @author jessewilson@google.com (Jesse Wilson)
  */
 class InheritingState implements State {
 
-    private final State parent;
+  private final State parent;
 
-    // Must be a linked hashmap in order to preserve order of bindings in Modules.
-    private final Map<Key<?>, Binding<?>> explicitBindingsMutable = Maps.newLinkedHashMap();
-    private final Map<Key<?>, Binding<?>> explicitBindings
-            = Collections.unmodifiableMap(explicitBindingsMutable);
-    private final Map<Class<? extends Annotation>, Scope> scopes = Maps.newHashMap();
-    private final List<MatcherAndConverter> converters = Lists.newArrayList();
-    private final List<TypeListenerBinding> listenerBindings = Lists.newArrayList();
-    private WeakKeySet blacklistedKeys = new WeakKeySet();
-    private final Object lock;
+  // Must be a linked hashmap in order to preserve order of bindings in Modules.
+  private final Map<Key<?>, Binding<?>> explicitBindingsMutable = Maps.newLinkedHashMap();
+  private final Map<Key<?>, Binding<?>> explicitBindings
+      = Collections.unmodifiableMap(explicitBindingsMutable);
+  private final Map<Class<? extends Annotation>, Scope> scopes = Maps.newHashMap();
+  private final List<MatcherAndConverter> converters = Lists.newArrayList();
+  /*if[AOP]*/
+  private final List<MethodAspect> methodAspects = Lists.newArrayList();
+  /*end[AOP]*/
+  private final List<TypeListenerBinding> listenerBindings = Lists.newArrayList();
+  private WeakKeySet blacklistedKeys = new WeakKeySet();
+  private final Object lock;
 
-    InheritingState(State parent) {
-        this.parent = checkNotNull(parent, "parent");
-        this.lock = (parent == State.NONE) ? this : parent.lock();
-    }
+  InheritingState(State parent) {
+    this.parent = checkNotNull(parent, "parent");
+    this.lock = (parent == State.NONE) ? this : parent.lock();
+  }
 
-    public State parent() {
-        return parent;
-    }
+  public State parent() {
+    return parent;
+  }
 
-    @SuppressWarnings("unchecked") // we only put in BindingImpls that match their key types
-    public <T> BindingImpl<T> getExplicitBinding(Key<T> key) {
-        Binding<?> binding = explicitBindings.get(key);
-        return binding != null ? (BindingImpl<T>) binding : parent.getExplicitBinding(key);
-    }
+  @SuppressWarnings("unchecked") // we only put in BindingImpls that match their key types
+  public <T> BindingImpl<T> getExplicitBinding(Key<T> key) {
+    Binding<?> binding = explicitBindings.get(key);
+    return binding != null ? (BindingImpl<T>) binding : parent.getExplicitBinding(key);
+  }
 
-    public Map<Key<?>, Binding<?>> getExplicitBindingsThisLevel() {
-        return explicitBindings;
-    }
+  public Map<Key<?>, Binding<?>> getExplicitBindingsThisLevel() {
+    return explicitBindings;
+  }
 
-    public void putBinding(Key<?> key, BindingImpl<?> binding) {
-        explicitBindingsMutable.put(key, binding);
-    }
+  public void putBinding(Key<?> key, BindingImpl<?> binding) {
+    explicitBindingsMutable.put(key, binding);
+  }
 
-    public Scope getScope(Class<? extends Annotation> annotationType) {
-        Scope scope = scopes.get(annotationType);
-        return scope != null ? scope : parent.getScope(annotationType);
-    }
+  public Scope getScope(Class<? extends Annotation> annotationType) {
+    Scope scope = scopes.get(annotationType);
+    return scope != null ? scope : parent.getScope(annotationType);
+  }
 
-    public void putAnnotation(Class<? extends Annotation> annotationType, Scope scope) {
-        scopes.put(annotationType, scope);
-    }
+  public void putAnnotation(Class<? extends Annotation> annotationType, Scope scope) {
+    scopes.put(annotationType, scope);
+  }
 
-    public Iterable<MatcherAndConverter> getConvertersThisLevel() {
-        return converters;
-    }
+  public Iterable<MatcherAndConverter> getConvertersThisLevel() {
+    return converters;
+  }
 
-    public void addConverter(MatcherAndConverter matcherAndConverter) {
-        converters.add(matcherAndConverter);
-    }
+  public void addConverter(MatcherAndConverter matcherAndConverter) {
+    converters.add(matcherAndConverter);
+  }
 
-    public MatcherAndConverter getConverter(
-            String stringValue, TypeLiteral<?> type, Errors errors, Object source) {
-        MatcherAndConverter matchingConverter = null;
-        for (State s = this; s != State.NONE; s = s.parent()) {
-            for (MatcherAndConverter converter : s.getConvertersThisLevel()) {
-                if (converter.getTypeMatcher().matches(type)) {
-                    if (matchingConverter != null) {
-                        errors.ambiguousTypeConversion(stringValue, source, type, matchingConverter, converter);
-                    }
-                    matchingConverter = converter;
-                }
-            }
+  public MatcherAndConverter getConverter(
+      String stringValue, TypeLiteral<?> type, Errors errors, Object source) {
+    MatcherAndConverter matchingConverter = null;
+    for (State s = this; s != State.NONE; s = s.parent()) {
+      for (MatcherAndConverter converter : s.getConvertersThisLevel()) {
+        if (converter.getTypeMatcher().matches(type)) {
+          if (matchingConverter != null) {
+            errors.ambiguousTypeConversion(stringValue, source, type, matchingConverter, converter);
+          }
+          matchingConverter = converter;
         }
-        return matchingConverter;
+      }
     }
+    return matchingConverter;
+  }
 
-    public void addTypeListener(TypeListenerBinding listenerBinding) {
-        listenerBindings.add(listenerBinding);
-    }
+  /*if[AOP]*/
+  public void addMethodAspect(MethodAspect methodAspect) {
+    methodAspects.add(methodAspect);
+  }
 
-    public List<TypeListenerBinding> getTypeListenerBindings() {
-        List<TypeListenerBinding> parentBindings = parent.getTypeListenerBindings();
-        List<TypeListenerBinding> result
-                = new ArrayList<TypeListenerBinding>(parentBindings.size() + 1);
-        result.addAll(parentBindings);
-        result.addAll(listenerBindings);
-        return result;
-    }
+  public ImmutableList<MethodAspect> getMethodAspects() {
+    return new ImmutableList.Builder<MethodAspect>()
+        .addAll(parent.getMethodAspects())
+        .addAll(methodAspects)
+        .build();
+  }
+  /*end[AOP]*/
 
-    public void blacklist(Key<?> key) {
-        parent.blacklist(key);
-        blacklistedKeys.add(key);
-    }
+  public void addTypeListener(TypeListenerBinding listenerBinding) {
+    listenerBindings.add(listenerBinding);
+  }
 
-    public boolean isBlacklisted(Key<?> key) {
-        return blacklistedKeys.contains(key);
-    }
+  public List<TypeListenerBinding> getTypeListenerBindings() {
+    List<TypeListenerBinding> parentBindings = parent.getTypeListenerBindings();
+    List<TypeListenerBinding> result
+        = new ArrayList<TypeListenerBinding>(parentBindings.size() + 1);
+    result.addAll(parentBindings);
+    result.addAll(listenerBindings);
+    return result;
+  }
 
-    @Override
+  public void blacklist(Key<?> key) {
+    parent.blacklist(key);
+    blacklistedKeys.add(key);
+  }
+
+  public boolean isBlacklisted(Key<?> key) {
+    return blacklistedKeys.contains(key);
+  }
+
+  public Object lock() {
+    return lock;
+  }
+
     public void clearBlacklisted() {
         blacklistedKeys = new WeakKeySet();
     }
 
-    public Object lock() {
-        return lock;
-    }
 }

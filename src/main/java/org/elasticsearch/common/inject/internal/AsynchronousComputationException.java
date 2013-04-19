@@ -23,7 +23,7 @@ package org.elasticsearch.common.inject.internal;
  */
 public class AsynchronousComputationException extends ComputationException {
 
-    public AsynchronousComputationException(Throwable cause) {
-        super(cause);
-    }
+  public AsynchronousComputationException(Throwable cause) {
+    super(cause);
+  }
 }

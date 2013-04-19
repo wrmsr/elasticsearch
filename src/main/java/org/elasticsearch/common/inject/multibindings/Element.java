@@ -20,7 +20,6 @@ package org.elasticsearch.common.inject.multibindings;
 import org.elasticsearch.common.inject.BindingAnnotation;
 
 import java.lang.annotation.Retention;
-
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
@@ -30,10 +29,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * @author jessewilson@google.com (Jesse Wilson)
  */
-@Retention(RUNTIME)
-@BindingAnnotation
+@Retention(RUNTIME) @BindingAnnotation
 @interface Element {
-    String setName();
-
-    int uniqueId();
+  String setName();
+  int uniqueId();
 }

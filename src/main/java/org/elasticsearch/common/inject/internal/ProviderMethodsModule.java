@@ -16,19 +16,20 @@
 
 package org.elasticsearch.common.inject.internal;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import org.elasticsearch.common.inject.*;
+import org.elasticsearch.common.inject.Binder;
+import org.elasticsearch.common.inject.Key;
+import org.elasticsearch.common.inject.Module;
+import org.elasticsearch.common.inject.Provider;
+import org.elasticsearch.common.inject.Provides;
+import org.elasticsearch.common.inject.TypeLiteral;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import org.elasticsearch.common.inject.spi.Dependency;
 import org.elasticsearch.common.inject.spi.Message;
 import org.elasticsearch.common.inject.util.Modules;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.List;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Creates bindings to methods annotated with {@literal @}{@link Provides}. Use the scope and
@@ -38,95 +39,92 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author jessewilson@google.com (Jesse Wilson)
  */
 public final class ProviderMethodsModule implements Module {
-    private final Object delegate;
-    private final TypeLiteral<?> typeLiteral;
+  private final Object delegate;
+  private final TypeLiteral<?> typeLiteral;
 
-    private ProviderMethodsModule(Object delegate) {
-        this.delegate = checkNotNull(delegate, "delegate");
-        this.typeLiteral = TypeLiteral.get(this.delegate.getClass());
+  private ProviderMethodsModule(Object delegate) {
+    this.delegate = checkNotNull(delegate, "delegate");
+    this.typeLiteral = TypeLiteral.get(this.delegate.getClass());
+  }
+
+  /**
+   * Returns a module which creates bindings for provider methods from the given module.
+   */
+  public static Module forModule(Module module) {
+    return forObject(module);
+  }
+
+  /**
+   * Returns a module which creates bindings for provider methods from the given object.
+   * This is useful notably for <a href="http://code.google.com/p/google-gin/">GIN</a>
+   */
+  public static Module forObject(Object object) {
+    // avoid infinite recursion, since installing a module always installs itself
+    if (object instanceof ProviderMethodsModule) {
+      return Modules.EMPTY_MODULE;
     }
 
-    /**
-     * Returns a module which creates bindings for provider methods from the given module.
-     */
-    public static Module forModule(Module module) {
-        return forObject(module);
+    return new ProviderMethodsModule(object);
+  }
+  public synchronized void configure(Binder binder) {
+    for (ProviderMethod<?> providerMethod : getProviderMethods(binder)) {
+      providerMethod.configure(binder);
     }
+  }
 
-    /**
-     * Returns a module which creates bindings for provider methods from the given object.
-     * This is useful notably for <a href="http://code.google.com/p/google-gin/">GIN</a>
-     */
-    public static Module forObject(Object object) {
-        // avoid infinite recursion, since installing a module always installs itself
-        if (object instanceof ProviderMethodsModule) {
-            return Modules.EMPTY_MODULE;
+  public List<ProviderMethod<?>> getProviderMethods(Binder binder) {
+    List<ProviderMethod<?>> result = Lists.newArrayList();
+    for (Class<?> c = delegate.getClass(); c != Object.class; c = c.getSuperclass()) {
+      for (Method method : c.getDeclaredMethods()) {
+        if (method.isAnnotationPresent(Provides.class)) {
+          result.add(createProviderMethod(binder, method));
         }
+      }
+    }
+    return result;
+  }
 
-        return new ProviderMethodsModule(object);
+  <T> ProviderMethod<T> createProviderMethod(Binder binder, final Method method) {
+    binder = binder.withSource(method);
+    Errors errors = new Errors(method);
+
+    // prepare the parameter providers
+    List<Dependency<?>> dependencies = Lists.newArrayList();
+    List<Provider<?>> parameterProviders = Lists.newArrayList();
+    List<TypeLiteral<?>> parameterTypes = typeLiteral.getParameterTypes(method);
+    Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+    for (int i = 0; i < parameterTypes.size(); i++) {
+      Key<?> key = getKey(errors, parameterTypes.get(i), method, parameterAnnotations[i]);
+      dependencies.add(Dependency.get(key));
+      parameterProviders.add(binder.getProvider(key));
     }
 
-    public synchronized void configure(Binder binder) {
-        for (ProviderMethod<?> providerMethod : getProviderMethods(binder)) {
-            providerMethod.configure(binder);
-        }
+    @SuppressWarnings("unchecked") // Define T as the method's return type.
+    TypeLiteral<T> returnType = (TypeLiteral<T>) typeLiteral.getReturnType(method);
+
+    Key<T> key = getKey(errors, returnType, method, method.getAnnotations());
+    Class<? extends Annotation> scopeAnnotation
+        = Annotations.findScopeAnnotation(errors, method.getAnnotations());
+
+    for (Message message : errors.getMessages()) {
+      binder.addError(message);
     }
 
-    public List<ProviderMethod<?>> getProviderMethods(Binder binder) {
-        List<ProviderMethod<?>> result = Lists.newArrayList();
-        for (Class<?> c = delegate.getClass(); c != Object.class; c = c.getSuperclass()) {
-            for (Method method : c.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Provides.class)) {
-                    result.add(createProviderMethod(binder, method));
-                }
-            }
-        }
-        return result;
-    }
+    return new ProviderMethod<T>(key, method, delegate, ImmutableSet.copyOf(dependencies),
+        parameterProviders, scopeAnnotation);
+  }
 
-    <T> ProviderMethod<T> createProviderMethod(Binder binder, final Method method) {
-        binder = binder.withSource(method);
-        Errors errors = new Errors(method);
+  <T> Key<T> getKey(Errors errors, TypeLiteral<T> type, Member member, Annotation[] annotations) {
+    Annotation bindingAnnotation = Annotations.findBindingAnnotation(errors, member, annotations);
+    return bindingAnnotation == null ? Key.get(type) : Key.get(type, bindingAnnotation);
+  }
 
-        // prepare the parameter providers
-        List<Dependency<?>> dependencies = Lists.newArrayList();
-        List<Provider<?>> parameterProviders = Lists.newArrayList();
-        List<TypeLiteral<?>> parameterTypes = typeLiteral.getParameterTypes(method);
-        Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-        for (int i = 0; i < parameterTypes.size(); i++) {
-            Key<?> key = getKey(errors, parameterTypes.get(i), method, parameterAnnotations[i]);
-            dependencies.add(Dependency.get(key));
-            parameterProviders.add(binder.getProvider(key));
-        }
+  @Override public boolean equals(Object o) {
+    return o instanceof ProviderMethodsModule
+        && ((ProviderMethodsModule) o).delegate == delegate;
+  }
 
-        @SuppressWarnings("unchecked") // Define T as the method's return type.
-                TypeLiteral<T> returnType = (TypeLiteral<T>) typeLiteral.getReturnType(method);
-
-        Key<T> key = getKey(errors, returnType, method, method.getAnnotations());
-        Class<? extends Annotation> scopeAnnotation
-                = Annotations.findScopeAnnotation(errors, method.getAnnotations());
-
-        for (Message message : errors.getMessages()) {
-            binder.addError(message);
-        }
-
-        return new ProviderMethod<T>(key, method, delegate, ImmutableSet.copyOf(dependencies),
-                parameterProviders, scopeAnnotation);
-    }
-
-    <T> Key<T> getKey(Errors errors, TypeLiteral<T> type, Member member, Annotation[] annotations) {
-        Annotation bindingAnnotation = Annotations.findBindingAnnotation(errors, member, annotations);
-        return bindingAnnotation == null ? Key.get(type) : Key.get(type, bindingAnnotation);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof ProviderMethodsModule
-                && ((ProviderMethodsModule) o).delegate == delegate;
-    }
-
-    @Override
-    public int hashCode() {
-        return delegate.hashCode();
-    }
+  @Override public int hashCode() {
+    return delegate.hashCode();
+  }
 }

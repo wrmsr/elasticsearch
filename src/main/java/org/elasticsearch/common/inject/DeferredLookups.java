@@ -16,12 +16,11 @@
 
 package org.elasticsearch.common.inject;
 
-import com.google.common.collect.Lists;
 import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.Lists;
 import org.elasticsearch.common.inject.spi.Element;
 import org.elasticsearch.common.inject.spi.MembersInjectorLookup;
 import org.elasticsearch.common.inject.spi.ProviderLookup;
-
 import java.util.List;
 
 /**
@@ -31,30 +30,30 @@ import java.util.List;
  * @author jessewilson@google.com (Jesse Wilson)
  */
 class DeferredLookups implements Lookups {
-    private final InjectorImpl injector;
-    private final List<Element> lookups = Lists.newArrayList();
+  private final InjectorImpl injector;
+  private final List<Element> lookups = Lists.newArrayList();
 
-    public DeferredLookups(InjectorImpl injector) {
-        this.injector = injector;
-    }
+  public DeferredLookups(InjectorImpl injector) {
+    this.injector = injector;
+  }
 
-    /**
-     * Initialize the specified lookups, either immediately or when the injector is created.
-     */
-    public void initialize(Errors errors) {
-        injector.lookups = injector;
-        new LookupProcessor(errors).process(injector, lookups);
-    }
+  /**
+   * Initialize the specified lookups, either immediately or when the injector is created.
+   */
+  public void initialize(Errors errors) {
+    injector.lookups = injector;
+    new LookupProcessor(errors).process(injector, lookups);
+  }
 
-    public <T> Provider<T> getProvider(Key<T> key) {
-        ProviderLookup<T> lookup = new ProviderLookup<T>(key, key);
-        lookups.add(lookup);
-        return lookup.getProvider();
-    }
+  public <T> Provider<T> getProvider(Key<T> key) {
+    ProviderLookup<T> lookup = new ProviderLookup<T>(key, key);
+    lookups.add(lookup);
+    return lookup.getProvider();
+  }
 
-    public <T> MembersInjector<T> getMembersInjector(TypeLiteral<T> type) {
-        MembersInjectorLookup<T> lookup = new MembersInjectorLookup<T>(type, type);
-        lookups.add(lookup);
-        return lookup.getMembersInjector();
-    }
+  public <T> MembersInjector<T> getMembersInjector(TypeLiteral<T> type) {
+    MembersInjectorLookup<T> lookup = new MembersInjectorLookup<T>(type, type);
+    lookups.add(lookup);
+    return lookup.getMembersInjector();
+  }
 }

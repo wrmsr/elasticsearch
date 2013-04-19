@@ -16,12 +16,10 @@
 
 package org.elasticsearch.common.inject.spi;
 
-import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.Scope;
-
+import org.elasticsearch.common.inject.Binder;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import java.lang.annotation.Annotation;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Registration of a scope annotation with the scope that implements it. Instances are created
@@ -35,33 +33,33 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @since 2.0
  */
 public final class ScopeBinding implements Element {
-    private final Object source;
-    private final Class<? extends Annotation> annotationType;
-    private final Scope scope;
+  private final Object source;
+  private final Class<? extends Annotation> annotationType;
+  private final Scope scope;
 
-    ScopeBinding(Object source, Class<? extends Annotation> annotationType, Scope scope) {
-        this.source = checkNotNull(source, "source");
-        this.annotationType = checkNotNull(annotationType, "annotationType");
-        this.scope = checkNotNull(scope, "scope");
-    }
+  ScopeBinding(Object source, Class<? extends Annotation> annotationType, Scope scope) {
+    this.source = checkNotNull(source, "source");
+    this.annotationType = checkNotNull(annotationType, "annotationType");
+    this.scope = checkNotNull(scope, "scope");
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    public Class<? extends Annotation> getAnnotationType() {
-        return annotationType;
-    }
+  public Class<? extends Annotation> getAnnotationType() {
+    return annotationType;
+  }
 
-    public Scope getScope() {
-        return scope;
-    }
+  public Scope getScope() {
+    return scope;
+  }
 
-    public <T> T acceptVisitor(ElementVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+  public <T> T acceptVisitor(ElementVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 
-    public void applyTo(Binder binder) {
-        binder.withSource(getSource()).bindScope(annotationType, scope);
-    }
+  public void applyTo(Binder binder) {
+    binder.withSource(getSource()).bindScope(annotationType, scope);
+  }
 }

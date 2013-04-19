@@ -23,7 +23,7 @@ import org.elasticsearch.common.inject.matcher.Matcher;
 /**
  * Binds types (picked using a Matcher) to an type listener. Registrations are created explicitly in
  * a module using {@link org.elasticsearch.common.inject.Binder#bindListener(Matcher, TypeListener)} statements:
- * <p/>
+ *
  * <pre>
  *     register(only(new TypeLiteral&lt;PaymentService&lt;CreditCard>>() {}), listener);</pre>
  *
@@ -32,40 +32,36 @@ import org.elasticsearch.common.inject.matcher.Matcher;
  */
 public final class TypeListenerBinding implements Element {
 
-    private final Object source;
-    private final Matcher<? super TypeLiteral<?>> typeMatcher;
-    private final TypeListener listener;
+  private final Object source;
+  private final Matcher<? super TypeLiteral<?>> typeMatcher;
+  private final TypeListener listener;
 
-    TypeListenerBinding(Object source, TypeListener listener,
-                        Matcher<? super TypeLiteral<?>> typeMatcher) {
-        this.source = source;
-        this.listener = listener;
-        this.typeMatcher = typeMatcher;
-    }
+  TypeListenerBinding(Object source, TypeListener listener,
+      Matcher<? super TypeLiteral<?>> typeMatcher) {
+    this.source = source;
+    this.listener = listener;
+    this.typeMatcher = typeMatcher;
+  }
 
-    /**
-     * Returns the registered listener.
-     */
-    public TypeListener getListener() {
-        return listener;
-    }
+  /** Returns the registered listener. */
+  public TypeListener getListener() {
+    return listener;
+  }
 
-    /**
-     * Returns the type matcher which chooses which types the listener should be notified of.
-     */
-    public Matcher<? super TypeLiteral<?>> getTypeMatcher() {
-        return typeMatcher;
-    }
+  /** Returns the type matcher which chooses which types the listener should be notified of. */
+  public Matcher<? super TypeLiteral<?>> getTypeMatcher() {
+    return typeMatcher;
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    public <T> T acceptVisitor(ElementVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+  public <T> T acceptVisitor(ElementVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 
-    public void applyTo(Binder binder) {
-        binder.withSource(getSource()).bindListener(typeMatcher, listener);
-    }
+  public void applyTo(Binder binder) {
+    binder.withSource(getSource()).bindListener(typeMatcher, listener);
+  }
 }

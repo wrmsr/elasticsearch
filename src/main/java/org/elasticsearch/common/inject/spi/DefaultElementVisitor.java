@@ -23,56 +23,63 @@ import org.elasticsearch.common.inject.Binding;
  * {@link #visitOther(Element)}, returning its result.
  *
  * @param <V> any type to be returned by the visit method. Use {@link Void} with
- *            {@code return null} if no return type is needed.
+ *     {@code return null} if no return type is needed.
+ *
  * @author sberlin@gmail.com (Sam Berlin)
  * @since 2.0
  */
 public abstract class DefaultElementVisitor<V> implements ElementVisitor<V> {
 
-    /**
-     * Default visit implementation. Returns {@code null}.
-     */
-    protected V visitOther(Element element) {
-        return null;
-    }
+  /**
+   * Default visit implementation. Returns {@code null}.
+   */
+  protected V visitOther(Element element) {
+    return null;
+  }
 
-    public V visit(Message message) {
-        return visitOther(message);
-    }
+  public V visit(Message message) {
+    return visitOther(message);
+  }
 
-    public <T> V visit(Binding<T> binding) {
-        return visitOther(binding);
-    }
+  public <T> V visit(Binding<T> binding) {
+    return visitOther(binding);
+  }
 
-    public V visit(ScopeBinding scopeBinding) {
-        return visitOther(scopeBinding);
-    }
+  /*if[AOP]*/
+  public V visit(InterceptorBinding interceptorBinding) {
+    return visitOther(interceptorBinding);
+  }
+  /*end[AOP]*/
 
-    public V visit(TypeConverterBinding typeConverterBinding) {
-        return visitOther(typeConverterBinding);
-    }
+  public V visit(ScopeBinding scopeBinding) {
+    return visitOther(scopeBinding);
+  }
 
-    public <T> V visit(ProviderLookup<T> providerLookup) {
-        return visitOther(providerLookup);
-    }
+  public V visit(TypeConverterBinding typeConverterBinding) {
+    return visitOther(typeConverterBinding);
+  }
 
-    public V visit(InjectionRequest injectionRequest) {
-        return visitOther(injectionRequest);
-    }
+  public <T> V visit(ProviderLookup<T> providerLookup) {
+    return visitOther(providerLookup);
+  }
 
-    public V visit(StaticInjectionRequest staticInjectionRequest) {
-        return visitOther(staticInjectionRequest);
-    }
+  public V visit(InjectionRequest injectionRequest) {
+    return visitOther(injectionRequest);
+  }
 
-    public V visit(PrivateElements privateElements) {
-        return visitOther(privateElements);
-    }
+  public V visit(StaticInjectionRequest staticInjectionRequest) {
+    return visitOther(staticInjectionRequest);
+  }
 
-    public <T> V visit(MembersInjectorLookup<T> lookup) {
-        return visitOther(lookup);
-    }
+  public V visit(PrivateElements privateElements) {
+    return visitOther(privateElements);
+  }
 
-    public V visit(TypeListenerBinding binding) {
-        return visitOther(binding);
-    }
+  public <T> V visit(MembersInjectorLookup<T> lookup) {
+    return visitOther(lookup);
+  }
+
+  public V visit(TypeListenerBinding binding) {
+    return visitOther(binding);
+  }
 }

@@ -19,22 +19,21 @@ package org.elasticsearch.common.inject;
 import org.elasticsearch.common.inject.binder.AnnotatedBindingBuilder;
 import org.elasticsearch.common.inject.binder.AnnotatedConstantBindingBuilder;
 import org.elasticsearch.common.inject.binder.LinkedBindingBuilder;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkState;
 import org.elasticsearch.common.inject.matcher.Matcher;
 import org.elasticsearch.common.inject.spi.Message;
 import org.elasticsearch.common.inject.spi.TypeConverter;
 import org.elasticsearch.common.inject.spi.TypeListener;
-
 import java.lang.annotation.Annotation;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import java.lang.reflect.Method;
 
 /**
  * A support class for {@link Module}s which reduces repetition and results in
  * a more readable configuration. Simply extend this class, implement {@link
  * #configure()}, and call the inherited methods which mirror those found in
  * {@link Binder}. For example:
- * <p/>
+ *
  * <pre>
  * public class MyModule extends AbstractModule {
  *   protected void configure() {
@@ -50,191 +49,205 @@ import static com.google.common.base.Preconditions.checkState;
  */
 public abstract class AbstractModule implements Module {
 
-    Binder binder;
+  Binder binder;
 
-    public final synchronized void configure(Binder builder) {
-        checkState(this.binder == null, "Re-entry is not allowed.");
+  public final synchronized void configure(Binder builder) {
+    checkState(this.binder == null, "Re-entry is not allowed.");
 
-        this.binder = checkNotNull(builder, "builder");
-        try {
-            configure();
-        } finally {
-            this.binder = null;
-        }
+    this.binder = checkNotNull(builder, "builder");
+    try {
+      configure();
     }
-
-    /**
-     * Configures a {@link Binder} via the exposed methods.
-     */
-    protected abstract void configure();
-
-    /**
-     * Gets direct access to the underlying {@code Binder}.
-     */
-    protected Binder binder() {
-        return binder;
+    finally {
+      this.binder = null;
     }
+  }
 
-    /**
-     * @see Binder#bindScope(Class, Scope)
-     */
-    protected void bindScope(Class<? extends Annotation> scopeAnnotation,
-                             Scope scope) {
-        binder.bindScope(scopeAnnotation, scope);
-    }
+  /**
+   * Configures a {@link Binder} via the exposed methods.
+   */
+  protected abstract void configure();
 
-    /**
-     * @see Binder#bind(Key)
-     */
-    protected <T> LinkedBindingBuilder<T> bind(Key<T> key) {
-        return binder.bind(key);
-    }
+  /**
+   * Gets direct access to the underlying {@code Binder}.
+   */
+  protected Binder binder() {
+    return binder;
+  }
 
-    /**
-     * @see Binder#bind(TypeLiteral)
-     */
-    protected <T> AnnotatedBindingBuilder<T> bind(TypeLiteral<T> typeLiteral) {
-        return binder.bind(typeLiteral);
-    }
+  /**
+   * @see Binder#bindScope(Class, Scope)
+   */
+  protected void bindScope(Class<? extends Annotation> scopeAnnotation,
+      Scope scope) {
+    binder.bindScope(scopeAnnotation, scope);
+  }
 
-    /**
-     * @see Binder#bind(Class)
-     */
-    protected <T> AnnotatedBindingBuilder<T> bind(Class<T> clazz) {
-        return binder.bind(clazz);
-    }
+  /**
+   * @see Binder#bind(Key)
+   */
+  protected <T> LinkedBindingBuilder<T> bind(Key<T> key) {
+    return binder.bind(key);
+  }
 
-    /**
-     * @see Binder#bindConstant()
-     */
-    protected AnnotatedConstantBindingBuilder bindConstant() {
-        return binder.bindConstant();
-    }
+  /**
+   * @see Binder#bind(TypeLiteral)
+   */
+  protected <T> AnnotatedBindingBuilder<T> bind(TypeLiteral<T> typeLiteral) {
+    return binder.bind(typeLiteral);
+  }
 
-    /**
-     * @see Binder#install(Module)
-     */
-    protected void install(Module module) {
-        binder.install(module);
-    }
+  /**
+   * @see Binder#bind(Class)
+   */
+  protected <T> AnnotatedBindingBuilder<T> bind(Class<T> clazz) {
+    return binder.bind(clazz);
+  }
 
-    /**
-     * @see Binder#addError(String, Object[])
-     */
-    protected void addError(String message, Object... arguments) {
-        binder.addError(message, arguments);
-    }
+  /**
+   * @see Binder#bindConstant()
+   */
+  protected AnnotatedConstantBindingBuilder bindConstant() {
+    return binder.bindConstant();
+  }
 
-    /**
-     * @see Binder#addError(Throwable)
-     */
-    protected void addError(Throwable t) {
-        binder.addError(t);
-    }
+  /**
+   * @see Binder#install(Module)
+   */
+  protected void install(Module module) {
+    binder.install(module);
+  }
 
-    /**
-     * @see Binder#addError(Message)
-     * @since 2.0
-     */
-    protected void addError(Message message) {
-        binder.addError(message);
-    }
+  /**
+   * @see Binder#addError(String, Object[])
+   */
+  protected void addError(String message, Object... arguments) {
+    binder.addError(message, arguments);
+  }
 
-    /**
-     * @see Binder#requestInjection(Object)
-     * @since 2.0
-     */
-    protected void requestInjection(Object instance) {
-        binder.requestInjection(instance);
-    }
+  /**
+   * @see Binder#addError(Throwable) 
+   */
+  protected void addError(Throwable t) {
+    binder.addError(t);
+  }
 
-    /**
-     * @see Binder#requestStaticInjection(Class[])
-     */
-    protected void requestStaticInjection(Class<?>... types) {
-        binder.requestStaticInjection(types);
-    }
+  /**
+   * @see Binder#addError(Message)
+   * @since 2.0
+   */
+  protected void addError(Message message) {
+    binder.addError(message);
+  }
 
-    /**
-     * Adds a dependency from this module to {@code key}. When the injector is
-     * created, Guice will report an error if {@code key} cannot be injected.
-     * Note that this requirement may be satisfied by implicit binding, such as
-     * a public no-arguments constructor.
-     *
-     * @since 2.0
-     */
-    protected void requireBinding(Key<?> key) {
-        binder.getProvider(key);
-    }
+  /**
+   * @see Binder#requestInjection(Object)
+   * @since 2.0
+   */
+  protected void requestInjection(Object instance) {
+    binder.requestInjection(instance);
+  }
 
-    /**
-     * Adds a dependency from this module to {@code type}. When the injector is
-     * created, Guice will report an error if {@code type} cannot be injected.
-     * Note that this requirement may be satisfied by implicit binding, such as
-     * a public no-arguments constructor.
-     *
-     * @since 2.0
-     */
-    protected void requireBinding(Class<?> type) {
-        binder.getProvider(type);
-    }
+  /**
+   * @see Binder#requestStaticInjection(Class[])
+   */
+  protected void requestStaticInjection(Class<?>... types) {
+    binder.requestStaticInjection(types);
+  }
 
-    /**
-     * @see Binder#getProvider(Key)
-     * @since 2.0
-     */
-    protected <T> Provider<T> getProvider(Key<T> key) {
-        return binder.getProvider(key);
-    }
+  /*if[AOP]*/
+  /**
+   * @see Binder#bindInterceptor(org.elasticsearch.common.inject.matcher.Matcher,
+   *  org.elasticsearch.common.inject.matcher.Matcher,
+   *  org.aopalliance.intercept.MethodInterceptor[])
+   */
+  protected void bindInterceptor(Matcher<? super Class<?>> classMatcher,
+      Matcher<? super Method> methodMatcher,
+      org.aopalliance.intercept.MethodInterceptor... interceptors) {
+    binder.bindInterceptor(classMatcher, methodMatcher, interceptors);
+  }
+  /*end[AOP]*/
 
-    /**
-     * @see Binder#getProvider(Class)
-     * @since 2.0
-     */
-    protected <T> Provider<T> getProvider(Class<T> type) {
-        return binder.getProvider(type);
-    }
+  /**
+   * Adds a dependency from this module to {@code key}. When the injector is
+   * created, Guice will report an error if {@code key} cannot be injected.
+   * Note that this requirement may be satisfied by implicit binding, such as
+   * a public no-arguments constructor.
+   *
+   * @since 2.0
+   */
+  protected void requireBinding(Key<?> key) {
+    binder.getProvider(key);
+  }
 
-    /**
-     * @see Binder#convertToTypes
-     * @since 2.0
-     */
-    protected void convertToTypes(Matcher<? super TypeLiteral<?>> typeMatcher,
-                                  TypeConverter converter) {
-        binder.convertToTypes(typeMatcher, converter);
-    }
+  /**
+   * Adds a dependency from this module to {@code type}. When the injector is
+   * created, Guice will report an error if {@code type} cannot be injected.
+   * Note that this requirement may be satisfied by implicit binding, such as
+   * a public no-arguments constructor.
+   *
+   * @since 2.0
+   */
+  protected void requireBinding(Class<?> type) {
+    binder.getProvider(type);
+  }
 
-    /**
-     * @see Binder#currentStage()
-     * @since 2.0
-     */
-    protected Stage currentStage() {
-        return binder.currentStage();
-    }
+  /**
+   * @see Binder#getProvider(Key)
+   * @since 2.0
+   */
+  protected <T> Provider<T> getProvider(Key<T> key) {
+    return binder.getProvider(key);
+  }
 
-    /**
-     * @see Binder#getMembersInjector(Class)
-     * @since 2.0
-     */
-    protected <T> MembersInjector<T> getMembersInjector(Class<T> type) {
-        return binder.getMembersInjector(type);
-    }
+  /**
+   * @see Binder#getProvider(Class)
+   * @since 2.0
+   */
+  protected <T> Provider<T> getProvider(Class<T> type) {
+    return binder.getProvider(type);
+  }
 
-    /**
-     * @see Binder#getMembersInjector(TypeLiteral)
-     * @since 2.0
-     */
-    protected <T> MembersInjector<T> getMembersInjector(TypeLiteral<T> type) {
-        return binder.getMembersInjector(type);
-    }
+  /**
+   * @see Binder#convertToTypes
+   * @since 2.0
+   */
+  protected void convertToTypes(Matcher<? super TypeLiteral<?>> typeMatcher,
+      TypeConverter converter) {
+    binder.convertToTypes(typeMatcher, converter);
+  }
 
-    /**
-     * @see Binder#bindListener(org.elasticsearch.common.inject.matcher.Matcher,
-     *      org.elasticsearch.common.inject.spi.TypeListener)
-     * @since 2.0
-     */
-    protected void bindListener(Matcher<? super TypeLiteral<?>> typeMatcher,
-                                TypeListener listener) {
-        binder.bindListener(typeMatcher, listener);
-    }
+  /**
+   * @see Binder#currentStage() 
+   * @since 2.0
+   */
+  protected Stage currentStage() {
+    return binder.currentStage();
+  }
+
+  /**
+   * @see Binder#getMembersInjector(Class)
+   * @since 2.0
+   */
+  protected <T> MembersInjector<T> getMembersInjector(Class<T> type) {
+    return binder.getMembersInjector(type);
+  }
+
+  /**
+   * @see Binder#getMembersInjector(TypeLiteral)
+   * @since 2.0
+   */
+  protected <T> MembersInjector<T> getMembersInjector(TypeLiteral<T> type) {
+    return binder.getMembersInjector(type);
+  }
+
+  /**
+   * @see Binder#bindListener(org.elasticsearch.common.inject.matcher.Matcher,
+   *  org.elasticsearch.common.inject.spi.TypeListener)
+   * @since 2.0
+   */
+  protected void bindListener(Matcher<? super TypeLiteral<?>> typeMatcher,
+      TypeListener listener) {
+    binder.bindListener(typeMatcher, listener);
+  }
 }

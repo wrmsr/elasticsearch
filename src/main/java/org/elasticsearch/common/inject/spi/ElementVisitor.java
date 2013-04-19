@@ -22,60 +22,68 @@ import org.elasticsearch.common.inject.Binding;
  * Visit elements.
  *
  * @param <V> any type to be returned by the visit method. Use {@link Void} with
- *            {@code return null} if no return type is needed.
+ *     {@code return null} if no return type is needed.
+ * 
  * @since 2.0
  */
 public interface ElementVisitor<V> {
 
-    /**
-     * Visit a mapping from a key (type and optional annotation) to the strategy for getting
-     * instances of the type.
-     */
-    <T> V visit(Binding<T> binding);
+  /**
+   * Visit a mapping from a key (type and optional annotation) to the strategy for getting
+   * instances of the type.
+   */
+  <T> V visit(Binding<T> binding);
 
-    /**
-     * Visit a registration of a scope annotation with the scope that implements it.
-     */
-    V visit(ScopeBinding binding);
+  /*if[AOP]*/
+  /**
+   * Visit a registration of interceptors for matching methods of matching classes.
+   */
+  V visit(InterceptorBinding binding);
+  /*end[AOP]*/
 
-    /**
-     * Visit a registration of type converters for matching target types.
-     */
-    V visit(TypeConverterBinding binding);
+  /**
+   * Visit a registration of a scope annotation with the scope that implements it.
+   */
+  V visit(ScopeBinding binding);
 
-    /**
-     * Visit a request to inject the instance fields and methods of an instance.
-     */
-    V visit(InjectionRequest request);
+  /**
+   * Visit a registration of type converters for matching target types.
+   */
+  V visit(TypeConverterBinding binding);
 
-    /**
-     * Visit a request to inject the static fields and methods of type.
-     */
-    V visit(StaticInjectionRequest request);
+  /**
+   * Visit a request to inject the instance fields and methods of an instance.
+   */
+  V visit(InjectionRequest request);
 
-    /**
-     * Visit a lookup of the provider for a type.
-     */
-    <T> V visit(ProviderLookup<T> lookup);
+  /**
+   * Visit a request to inject the static fields and methods of type.
+   */
+  V visit(StaticInjectionRequest request);
 
-    /**
-     * Visit a lookup of the members injector.
-     */
-    <T> V visit(MembersInjectorLookup<T> lookup);
+  /**
+   * Visit a lookup of the provider for a type.
+   */
+  <T> V visit(ProviderLookup<T> lookup);
 
-    /**
-     * Visit an error message and the context in which it occured.
-     */
-    V visit(Message message);
+  /**
+   * Visit a lookup of the members injector.
+   */
+  <T> V visit(MembersInjectorLookup<T> lookup);
 
-    /**
-     * Visit a collection of configuration elements for a {@linkplain org.elasticsearch.common.inject.PrivateBinder
-     * private binder}.
-     */
-    V visit(PrivateElements elements);
+  /**
+   * Visit an error message and the context in which it occured.
+   */
+  V visit(Message message);
 
-    /**
-     * Visit an injectable type listener binding.
-     */
-    V visit(TypeListenerBinding binding);
+  /**
+   * Visit a collection of configuration elements for a {@linkplain org.elasticsearch.common.inject.PrivateBinder
+   * private binder}.
+   */
+  V visit(PrivateElements elements);
+
+  /**
+   * Visit an injectable type listener binding.
+   */
+  V visit(TypeListenerBinding binding);
 }

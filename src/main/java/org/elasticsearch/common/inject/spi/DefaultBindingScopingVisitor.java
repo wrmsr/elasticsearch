@@ -17,7 +17,6 @@
 package org.elasticsearch.common.inject.spi;
 
 import org.elasticsearch.common.inject.Scope;
-
 import java.lang.annotation.Annotation;
 
 /**
@@ -25,32 +24,33 @@ import java.lang.annotation.Annotation;
  * {@link #visitOther()}, returning its result.
  *
  * @param <V> any type to be returned by the visit method. Use {@link Void} with
- *            {@code return null} if no return type is needed.
+ *     {@code return null} if no return type is needed.
+ * 
  * @author jessewilson@google.com (Jesse Wilson)
  * @since 2.0
  */
 public class DefaultBindingScopingVisitor<V> implements BindingScopingVisitor<V> {
 
-    /**
-     * Default visit implementation. Returns {@code null}.
-     */
-    protected V visitOther() {
-        return null;
-    }
+  /**
+   * Default visit implementation. Returns {@code null}.
+   */
+  protected V visitOther() {
+    return null;
+  }
 
-    public V visitEagerSingleton() {
-        return visitOther();
-    }
+  public V visitEagerSingleton() {
+    return visitOther();
+  }
 
-    public V visitScope(Scope scope) {
-        return visitOther();
-    }
+  public V visitScope(Scope scope) {
+    return visitOther();
+  }
 
-    public V visitScopeAnnotation(Class<? extends Annotation> scopeAnnotation) {
-        return visitOther();
-    }
+  public V visitScopeAnnotation(Class<? extends Annotation> scopeAnnotation) {
+    return visitOther();
+  }
 
-    public V visitNoScoping() {
-        return visitOther();
-    }
+  public V visitNoScoping() {
+    return visitOther();
+  }
 }

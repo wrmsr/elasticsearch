@@ -16,11 +16,15 @@
 
 package org.elasticsearch.common.inject;
 
+import org.elasticsearch.common.inject.internal.BytecodeGen;
+import org.elasticsearch.common.inject.internal.BytecodeGen.Visibility;
+import org.elasticsearch.common.inject.internal.ImmutableMap;
 import org.elasticsearch.common.inject.spi.InjectionPoint;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 /**
  * Produces construction proxies that invoke the class constructor.
@@ -29,43 +33,70 @@ import java.lang.reflect.Modifier;
  */
 class DefaultConstructionProxyFactory<T> implements ConstructionProxyFactory<T> {
 
-    private final InjectionPoint injectionPoint;
+  private final InjectionPoint injectionPoint;
 
-    /**
-     * @param injectionPoint an injection point whose member is a constructor of {@code T}.
-     */
-    DefaultConstructionProxyFactory(InjectionPoint injectionPoint) {
-        this.injectionPoint = injectionPoint;
-    }
+  /**
+   * @param injectionPoint an injection point whose member is a constructor of {@code T}.
+   */
+  DefaultConstructionProxyFactory(InjectionPoint injectionPoint) {
+    this.injectionPoint = injectionPoint;
+  }
 
-    public ConstructionProxy<T> create() {
-        @SuppressWarnings("unchecked") // the injection point is for a constructor of T
-        final Constructor<T> constructor = (Constructor<T>) injectionPoint.getMember();
+  public ConstructionProxy<T> create() {
+    @SuppressWarnings("unchecked") // the injection point is for a constructor of T
+    final Constructor<T> constructor = (Constructor<T>) injectionPoint.getMember();
 
-        // Use FastConstructor if the constructor is public.
-        if (Modifier.isPublic(constructor.getModifiers())) {
-        } else {
-            constructor.setAccessible(true);
+    // Use FastConstructor if the constructor is public.
+    if (Modifier.isPublic(constructor.getModifiers())) {
+      /*if[AOP]*/
+      return new ConstructionProxy<T>() {
+        Class<T> classToConstruct = constructor.getDeclaringClass();
+        final net.sf.cglib.reflect.FastConstructor fastConstructor
+            = BytecodeGen.newFastClass(classToConstruct, Visibility.forMember(constructor))
+                .getConstructor(constructor);
+
+        @SuppressWarnings("unchecked")
+        public T newInstance(Object... arguments) throws InvocationTargetException {
+          return (T) fastConstructor.newInstance(arguments);
         }
-
-        return new ConstructionProxy<T>() {
-            public T newInstance(Object... arguments) throws InvocationTargetException {
-                try {
-                    return constructor.newInstance(arguments);
-                } catch (InstantiationException e) {
-                    throw new AssertionError(e); // shouldn't happen, we know this is a concrete type
-                } catch (IllegalAccessException e) {
-                    throw new AssertionError(e); // a security manager is blocking us, we're hosed
-                }
-            }
-
-            public InjectionPoint getInjectionPoint() {
-                return injectionPoint;
-            }
-
-            public Constructor<T> getConstructor() {
-                return constructor;
-            }
-        };
+        public InjectionPoint getInjectionPoint() {
+          return injectionPoint;
+        }
+        public Constructor<T> getConstructor() {
+          return constructor;
+        }
+        public ImmutableMap<Method, List<org.aopalliance.intercept.MethodInterceptor>>
+            getMethodInterceptors() {
+          return ImmutableMap.of();
+        }
+      };
+      /*end[AOP]*/
+    } else {
+      constructor.setAccessible(true);
     }
+
+    return new ConstructionProxy<T>() {
+      public T newInstance(Object... arguments) throws InvocationTargetException {
+        try {
+          return constructor.newInstance(arguments);
+        } catch (InstantiationException e) {
+          throw new AssertionError(e); // shouldn't happen, we know this is a concrete type
+        } catch (IllegalAccessException e) {
+          throw new AssertionError(e); // a security manager is blocking us, we're hosed
+        }
+      }
+      public InjectionPoint getInjectionPoint() {
+        return injectionPoint;
+      }
+      public Constructor<T> getConstructor() {
+        return constructor;
+      }
+      /*if[AOP]*/
+      public ImmutableMap<Method, List<org.aopalliance.intercept.MethodInterceptor>>
+          getMethodInterceptors() {
+        return ImmutableMap.of();
+      }
+      /*end[AOP]*/
+    };
+  }
 }

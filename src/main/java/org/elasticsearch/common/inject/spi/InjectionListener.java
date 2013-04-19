@@ -26,10 +26,10 @@ package org.elasticsearch.common.inject.spi;
  */
 public interface InjectionListener<I> {
 
-    /**
-     * Invoked by Guice after it injects the fields and methods of instance.
-     *
-     * @param injectee instance that Guice injected dependencies into
-     */
-    void afterInjection(I injectee);
+  /**
+   * Invoked by Guice after it injects the fields and methods of instance.
+   *
+   * @param injectee instance that Guice injected dependencies into
+   */
+  void afterInjection(I injectee);
 }

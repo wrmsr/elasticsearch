@@ -28,22 +28,23 @@ import java.lang.reflect.Constructor;
  */
 class Reflection {
 
-    /**
-     * A placeholder. This enables us to continue processing and gather more
-     * errors but blows up if you actually try to use it.
-     */
-    static class InvalidConstructor {
-        InvalidConstructor() {
-            throw new AssertionError();
-        }
+  /**
+   * A placeholder. This enables us to continue processing and gather more
+   * errors but blows up if you actually try to use it.
+   */
+  static class InvalidConstructor {
+    InvalidConstructor() {
+      throw new AssertionError();
     }
+  }
 
-    @SuppressWarnings("unchecked")
-    static <T> Constructor<T> invalidConstructor() {
-        try {
-            return (Constructor<T>) InvalidConstructor.class.getDeclaredConstructor();
-        } catch (NoSuchMethodException e) {
-            throw new AssertionError(e);
-        }
+  @SuppressWarnings("unchecked")
+  static <T> Constructor<T> invalidConstructor() {
+    try {
+      return (Constructor<T>) InvalidConstructor.class.getDeclaredConstructor();
     }
+    catch (NoSuchMethodException e) {
+      throw new AssertionError(e);
+    }
+  }
 }

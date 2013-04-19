@@ -16,11 +16,10 @@
 
 package org.elasticsearch.common.inject.spi;
 
-import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.TypeLiteral;
+import org.elasticsearch.common.inject.Binder;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import org.elasticsearch.common.inject.matcher.Matcher;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Registration of type converters for matching target types. Instances are created
@@ -33,34 +32,34 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @since 2.0
  */
 public final class TypeConverterBinding implements Element {
-    private final Object source;
-    private final Matcher<? super TypeLiteral<?>> typeMatcher;
-    private final TypeConverter typeConverter;
+  private final Object source;
+  private final Matcher<? super TypeLiteral<?>> typeMatcher;
+  private final TypeConverter typeConverter;
 
-    TypeConverterBinding(Object source, Matcher<? super TypeLiteral<?>> typeMatcher,
-                         TypeConverter typeConverter) {
-        this.source = checkNotNull(source, "source");
-        this.typeMatcher = checkNotNull(typeMatcher, "typeMatcher");
-        this.typeConverter = checkNotNull(typeConverter, "typeConverter");
-    }
+  TypeConverterBinding(Object source, Matcher<? super TypeLiteral<?>> typeMatcher,
+      TypeConverter typeConverter) {
+    this.source = checkNotNull(source, "source");
+    this.typeMatcher = checkNotNull(typeMatcher, "typeMatcher");
+    this.typeConverter = checkNotNull(typeConverter, "typeConverter");
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    public Matcher<? super TypeLiteral<?>> getTypeMatcher() {
-        return typeMatcher;
-    }
+  public Matcher<? super TypeLiteral<?>> getTypeMatcher() {
+    return typeMatcher;
+  }
 
-    public TypeConverter getTypeConverter() {
-        return typeConverter;
-    }
+  public TypeConverter getTypeConverter() {
+    return typeConverter;
+  }
 
-    public <T> T acceptVisitor(ElementVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+  public <T> T acceptVisitor(ElementVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 
-    public void applyTo(Binder binder) {
-        binder.withSource(getSource()).convertToTypes(typeMatcher, typeConverter);
-    }
+  public void applyTo(Binder binder) {
+    binder.withSource(getSource()).convertToTypes(typeMatcher, typeConverter);
+  }
 }

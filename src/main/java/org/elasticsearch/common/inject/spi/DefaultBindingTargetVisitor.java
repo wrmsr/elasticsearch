@@ -23,54 +23,55 @@ import org.elasticsearch.common.inject.Binding;
  * #visitOther(Binding)}, returning its result.
  *
  * @param <V> any type to be returned by the visit method. Use {@link Void} with
- *            {@code return null} if no return type is needed.
+ *     {@code return null} if no return type is needed.
+ *
  * @author jessewilson@google.com (Jesse Wilson)
  * @since 2.0
  */
 public abstract class DefaultBindingTargetVisitor<T, V> implements BindingTargetVisitor<T, V> {
 
-    /**
-     * Default visit implementation. Returns {@code null}.
-     */
-    protected V visitOther(Binding<? extends T> binding) {
-        return null;
-    }
+  /**
+   * Default visit implementation. Returns {@code null}.
+   */
+  protected V visitOther(Binding<? extends T> binding) {
+    return null;
+  }
 
-    public V visit(InstanceBinding<? extends T> instanceBinding) {
-        return visitOther(instanceBinding);
-    }
+  public V visit(InstanceBinding<? extends T> instanceBinding) {
+    return visitOther(instanceBinding);
+  }
 
-    public V visit(ProviderInstanceBinding<? extends T> providerInstanceBinding) {
-        return visitOther(providerInstanceBinding);
-    }
+  public V visit(ProviderInstanceBinding<? extends T> providerInstanceBinding) {
+    return visitOther(providerInstanceBinding);
+  }
 
-    public V visit(ProviderKeyBinding<? extends T> providerKeyBinding) {
-        return visitOther(providerKeyBinding);
-    }
+  public V visit(ProviderKeyBinding<? extends T> providerKeyBinding) {
+    return visitOther(providerKeyBinding);
+  }
 
-    public V visit(LinkedKeyBinding<? extends T> linkedKeyBinding) {
-        return visitOther(linkedKeyBinding);
-    }
+  public V visit(LinkedKeyBinding<? extends T> linkedKeyBinding) {
+    return visitOther(linkedKeyBinding);
+  }
 
-    public V visit(ExposedBinding<? extends T> exposedBinding) {
-        return visitOther(exposedBinding);
-    }
+  public V visit(ExposedBinding<? extends T> exposedBinding) {
+    return visitOther(exposedBinding);
+  }
 
-    public V visit(UntargettedBinding<? extends T> untargettedBinding) {
-        return visitOther(untargettedBinding);
-    }
+  public V visit(UntargettedBinding<? extends T> untargettedBinding) {
+    return visitOther(untargettedBinding);
+  }
 
-    public V visit(ConstructorBinding<? extends T> constructorBinding) {
-        return visitOther(constructorBinding);
-    }
+  public V visit(ConstructorBinding<? extends T> constructorBinding) {
+    return visitOther(constructorBinding);
+  }
 
-    public V visit(ConvertedConstantBinding<? extends T> convertedConstantBinding) {
-        return visitOther(convertedConstantBinding);
-    }
+  public V visit(ConvertedConstantBinding<? extends T> convertedConstantBinding) {
+    return visitOther(convertedConstantBinding);
+  }
 
-    // javac says it's an error to cast ProviderBinding<? extends T> to Binding<? extends T>
-    @SuppressWarnings("unchecked")
-    public V visit(ProviderBinding<? extends T> providerBinding) {
-        return visitOther((Binding) providerBinding);
-    }
+   // javac says it's an error to cast ProviderBinding<? extends T> to Binding<? extends T>
+  @SuppressWarnings("unchecked")
+  public V visit(ProviderBinding<? extends T> providerBinding) {
+    return visitOther((Binding) providerBinding);
+  }
 }

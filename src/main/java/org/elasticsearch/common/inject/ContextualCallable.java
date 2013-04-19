@@ -21,7 +21,7 @@ import org.elasticsearch.common.inject.internal.InternalContext;
 
 /**
  * @author crazybob@google.com (Bob Lee)
- */
+*/
 interface ContextualCallable<T> {
-    T call(InternalContext context) throws ErrorsException;
+  T call(InternalContext context) throws ErrorsException;
 }

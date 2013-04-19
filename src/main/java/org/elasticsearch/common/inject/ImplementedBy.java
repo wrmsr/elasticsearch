@@ -16,11 +16,10 @@
 
 package org.elasticsearch.common.inject;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.TYPE;
+import java.lang.annotation.Retention;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.lang.annotation.Target;
 
 /**
  * A pointer to the default implementation of a type.
@@ -31,8 +30,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target(TYPE)
 public @interface ImplementedBy {
 
-    /**
-     * The implementation type.
-     */
-    Class<?> value();
+  /**
+   * The implementation type.
+   */
+  Class<?> value();
 }

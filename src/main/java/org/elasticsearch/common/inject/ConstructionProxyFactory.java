@@ -23,8 +23,8 @@ package org.elasticsearch.common.inject;
  */
 interface ConstructionProxyFactory<T> {
 
-    /**
-     * Gets a construction proxy for the given constructor.
-     */
-    ConstructionProxy<T> create();
+  /**
+   * Gets a construction proxy for the given constructor.
+   */
+  ConstructionProxy<T> create();
 }

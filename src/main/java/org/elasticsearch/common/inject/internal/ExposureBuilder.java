@@ -16,54 +16,52 @@
 
 package org.elasticsearch.common.inject.internal;
 
+import org.elasticsearch.common.inject.binder.AnnotatedElementBuilder;
 import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.Key;
-import org.elasticsearch.common.inject.binder.AnnotatedElementBuilder;
-
 import java.lang.annotation.Annotation;
 
 /**
  * For private binder's expose() method.
  */
 public class ExposureBuilder<T> implements AnnotatedElementBuilder {
-    private final Binder binder;
-    private final Object source;
-    private Key<T> key;
+  private final Binder binder;
+  private final Object source;
+  private Key<T> key;
 
-    public ExposureBuilder(Binder binder, Object source, Key<T> key) {
-        this.binder = binder;
-        this.source = source;
-        this.key = key;
-    }
+  public ExposureBuilder(Binder binder, Object source, Key<T> key) {
+    this.binder = binder;
+    this.source = source;
+    this.key = key;
+  }
 
-    protected void checkNotAnnotated() {
-        if (key.getAnnotationType() != null) {
-            binder.addError(AbstractBindingBuilder.ANNOTATION_ALREADY_SPECIFIED);
-        }
+  protected void checkNotAnnotated() {
+    if (key.getAnnotationType() != null) {
+      binder.addError(AbstractBindingBuilder.ANNOTATION_ALREADY_SPECIFIED);
     }
+  }
 
-    public void annotatedWith(Class<? extends Annotation> annotationType) {
-        com.google.common.base.Preconditions.checkNotNull(annotationType, "annotationType");
-        checkNotAnnotated();
-        key = Key.get(key.getTypeLiteral(), annotationType);
-    }
+  public void annotatedWith(Class<? extends Annotation> annotationType) {
+    org.elasticsearch.common.inject.internal.Preconditions.checkNotNull(annotationType, "annotationType");
+    checkNotAnnotated();
+    key = Key.get(key.getTypeLiteral(), annotationType);
+  }
 
-    public void annotatedWith(Annotation annotation) {
-        com.google.common.base.Preconditions.checkNotNull(annotation, "annotation");
-        checkNotAnnotated();
-        key = Key.get(key.getTypeLiteral(), annotation);
-    }
+  public void annotatedWith(Annotation annotation) {
+    org.elasticsearch.common.inject.internal.Preconditions.checkNotNull(annotation, "annotation");
+    checkNotAnnotated();
+    key = Key.get(key.getTypeLiteral(), annotation);
+  }
 
-    public Key<?> getKey() {
-        return key;
-    }
+  public Key<?> getKey() {
+    return key;
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    @Override
-    public String toString() {
-        return "AnnotatedElementBuilder";
-    }
+  @Override public String toString() {
+    return "AnnotatedElementBuilder";
+  }
 }

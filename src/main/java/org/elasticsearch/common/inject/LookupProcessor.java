@@ -29,33 +29,31 @@ import org.elasticsearch.common.inject.spi.ProviderLookup;
  */
 class LookupProcessor extends AbstractProcessor {
 
-    LookupProcessor(Errors errors) {
-        super(errors);
+  LookupProcessor(Errors errors) {
+    super(errors);
+  }
+
+  @Override public <T> Boolean visit(MembersInjectorLookup<T> lookup) {
+    try {
+      MembersInjector<T> membersInjector
+          = injector.membersInjectorStore.get(lookup.getType(), errors);
+      lookup.initializeDelegate(membersInjector);
+    } catch (ErrorsException e) {
+      errors.merge(e.getErrors()); // TODO: source
     }
 
-    @Override
-    public <T> Boolean visit(MembersInjectorLookup<T> lookup) {
-        try {
-            MembersInjector<T> membersInjector
-                    = injector.membersInjectorStore.get(lookup.getType(), errors);
-            lookup.initializeDelegate(membersInjector);
-        } catch (ErrorsException e) {
-            errors.merge(e.getErrors()); // TODO: source
-        }
+    return true;
+  }
 
-        return true;
+  @Override public <T> Boolean visit(ProviderLookup<T> lookup) {
+    // ensure the provider can be created
+    try {
+      Provider<T> provider = injector.getProviderOrThrow(lookup.getKey(), errors);
+      lookup.initializeDelegate(provider);
+    } catch (ErrorsException e) {
+      errors.merge(e.getErrors()); // TODO: source
     }
 
-    @Override
-    public <T> Boolean visit(ProviderLookup<T> lookup) {
-        // ensure the provider can be created
-        try {
-            Provider<T> provider = injector.getProviderOrThrow(lookup.getKey(), errors);
-            lookup.initializeDelegate(provider);
-        } catch (ErrorsException e) {
-            errors.merge(e.getErrors()); // TODO: source
-        }
-
-        return true;
-    }
+    return true;
+  }
 }

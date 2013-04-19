@@ -17,11 +17,10 @@
 package org.elasticsearch.common.inject;
 
 import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.METHOD;
+import java.lang.annotation.Retention;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.lang.annotation.Target;
 
 /**
  * Annotates methods of a {@link Module} to create a provider method binding. The method's return
@@ -30,8 +29,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * @author crazybob@google.com (Bob Lee)
  * @since 2.0
  */
-@Documented
-@Target(METHOD)
-@Retention(RUNTIME)
-public @interface Provides {
-}
+@Documented @Target(METHOD) @Retention(RUNTIME)
+public @interface Provides {}

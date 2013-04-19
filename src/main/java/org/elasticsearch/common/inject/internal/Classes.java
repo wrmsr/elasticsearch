@@ -23,13 +23,13 @@ import java.lang.reflect.Modifier;
  */
 public class Classes {
 
-    public static boolean isInnerClass(Class<?> clazz) {
-        return !Modifier.isStatic(clazz.getModifiers())
-                && clazz.getEnclosingClass() != null;
-    }
+  public static boolean isInnerClass(Class<?> clazz) {
+    return !Modifier.isStatic(clazz.getModifiers())
+        && clazz.getEnclosingClass() != null;
+  }
 
-    public static boolean isConcrete(Class<?> clazz) {
-        int modifiers = clazz.getModifiers();
-        return !clazz.isInterface() && !Modifier.isAbstract(modifiers);
-    }
+  public static boolean isConcrete(Class<?> clazz) {
+    int modifiers = clazz.getModifiers();
+    return !clazz.isInterface() && !Modifier.isAbstract(modifiers);
+  }
 }

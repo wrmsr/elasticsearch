@@ -30,95 +30,96 @@ import java.util.List;
  */
 public class ConstructionContext<T> {
 
-    T currentReference;
-    boolean constructing;
+  T currentReference;
+  boolean constructing;
 
-    List<DelegatingInvocationHandler<T>> invocationHandlers;
+  List<DelegatingInvocationHandler<T>> invocationHandlers;
 
-    public T getCurrentReference() {
-        return currentReference;
+  public T getCurrentReference() {
+    return currentReference;
+  }
+
+  public void removeCurrentReference() {
+    this.currentReference = null;
+  }
+
+  public void setCurrentReference(T currentReference) {
+    this.currentReference = currentReference;
+  }
+
+  public boolean isConstructing() {
+    return constructing;
+  }
+
+  public void startConstruction() {
+    this.constructing = true;
+  }
+
+  public void finishConstruction() {
+    this.constructing = false;
+    invocationHandlers = null;
+  }
+
+  public Object createProxy(Errors errors, Class<?> expectedType) throws ErrorsException {
+    // TODO: if I create a proxy which implements all the interfaces of
+    // the implementation type, I'll be able to get away with one proxy
+    // instance (as opposed to one per caller).
+
+    if (!expectedType.isInterface()) {
+      throw errors.cannotSatisfyCircularDependency(expectedType).toException();
     }
 
-    public void removeCurrentReference() {
-        this.currentReference = null;
+    if (invocationHandlers == null) {
+      invocationHandlers = new ArrayList<DelegatingInvocationHandler<T>>();
     }
 
-    public void setCurrentReference(T currentReference) {
-        this.currentReference = currentReference;
+    DelegatingInvocationHandler<T> invocationHandler
+        = new DelegatingInvocationHandler<T>();
+    invocationHandlers.add(invocationHandler);
+
+    ClassLoader classLoader = BytecodeGen.getClassLoader(expectedType);
+    return expectedType.cast(Proxy.newProxyInstance(classLoader,
+        new Class[] { expectedType }, invocationHandler));
+  }
+
+  public void setProxyDelegates(T delegate) {
+    if (invocationHandlers != null) {
+      for (DelegatingInvocationHandler<T> handler : invocationHandlers) {
+        handler.setDelegate(delegate);
+      }
+    }
+  }
+
+  static class DelegatingInvocationHandler<T> implements InvocationHandler {
+
+    T delegate;
+
+    public Object invoke(Object proxy, Method method, Object[] args)
+        throws Throwable {
+      if (delegate == null) {
+        throw new IllegalStateException("This is a proxy used to support"
+            + " circular references involving constructors. The object we're"
+            + " proxying is not constructed yet. Please wait until after"
+            + " injection has completed to use this object.");
+      }
+
+      try {
+        // This appears to be not test-covered
+        return method.invoke(delegate, args);
+      }
+      catch (IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
+      catch (IllegalArgumentException e) {
+        throw new RuntimeException(e);
+      }
+      catch (InvocationTargetException e) {
+        throw e.getTargetException();
+      }
     }
 
-    public boolean isConstructing() {
-        return constructing;
+    void setDelegate(T delegate) {
+      this.delegate = delegate;
     }
-
-    public void startConstruction() {
-        this.constructing = true;
-    }
-
-    public void finishConstruction() {
-        this.constructing = false;
-        invocationHandlers = null;
-    }
-
-    public Object createProxy(Errors errors, Class<?> expectedType) throws ErrorsException {
-        // TODO: if I create a proxy which implements all the interfaces of
-        // the implementation type, I'll be able to get away with one proxy
-        // instance (as opposed to one per caller).
-
-        if (!expectedType.isInterface()) {
-            throw errors.cannotSatisfyCircularDependency(expectedType).toException();
-        }
-
-        if (invocationHandlers == null) {
-            invocationHandlers = new ArrayList<DelegatingInvocationHandler<T>>();
-        }
-
-        DelegatingInvocationHandler<T> invocationHandler
-                = new DelegatingInvocationHandler<T>();
-        invocationHandlers.add(invocationHandler);
-
-        // ES: Replace, since we don't use bytecode gen, just get the type class loader, or system if its null
-        //ClassLoader classLoader = BytecodeGen.getClassLoader(expectedType);
-        ClassLoader classLoader = expectedType.getClassLoader() == null ? ClassLoader.getSystemClassLoader() : expectedType.getClassLoader();
-        return expectedType.cast(Proxy.newProxyInstance(classLoader,
-                new Class[]{expectedType}, invocationHandler));
-    }
-
-    public void setProxyDelegates(T delegate) {
-        if (invocationHandlers != null) {
-            for (DelegatingInvocationHandler<T> handler : invocationHandlers) {
-                handler.setDelegate(delegate);
-            }
-        }
-    }
-
-    static class DelegatingInvocationHandler<T> implements InvocationHandler {
-
-        T delegate;
-
-        public Object invoke(Object proxy, Method method, Object[] args)
-                throws Throwable {
-            if (delegate == null) {
-                throw new IllegalStateException("This is a proxy used to support"
-                        + " circular references involving constructors. The object we're"
-                        + " proxying is not constructed yet. Please wait until after"
-                        + " injection has completed to use this object.");
-            }
-
-            try {
-                // This appears to be not test-covered
-                return method.invoke(delegate, args);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-            }
-        }
-
-        void setDelegate(T delegate) {
-            this.delegate = delegate;
-        }
-    }
+  }
 }

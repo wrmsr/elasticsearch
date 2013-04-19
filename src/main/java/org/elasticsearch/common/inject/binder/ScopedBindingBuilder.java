@@ -17,7 +17,6 @@
 package org.elasticsearch.common.inject.binder;
 
 import org.elasticsearch.common.inject.Scope;
-
 import java.lang.annotation.Annotation;
 
 /**
@@ -27,21 +26,21 @@ import java.lang.annotation.Annotation;
  */
 public interface ScopedBindingBuilder {
 
-    /**
-     * See the EDSL examples at {@link org.elasticsearch.common.inject.Binder}.
-     */
-    void in(Class<? extends Annotation> scopeAnnotation);
+  /**
+   * See the EDSL examples at {@link org.elasticsearch.common.inject.Binder}.
+   */
+  void in(Class<? extends Annotation> scopeAnnotation);
 
-    /**
-     * See the EDSL examples at {@link org.elasticsearch.common.inject.Binder}.
-     */
-    void in(Scope scope);
+  /**
+   * See the EDSL examples at {@link org.elasticsearch.common.inject.Binder}.
+   */
+  void in(Scope scope);
 
-    /**
-     * Instructs the {@link org.elasticsearch.common.inject.Injector} to eagerly initialize this
-     * singleton-scoped binding upon creation. Useful for application
-     * initialization logic.  See the EDSL examples at
-     * {@link org.elasticsearch.common.inject.Binder}.
-     */
-    void asEagerSingleton();
+  /**
+   * Instructs the {@link org.elasticsearch.common.inject.Injector} to eagerly initialize this
+   * singleton-scoped binding upon creation. Useful for application
+   * initialization logic.  See the EDSL examples at
+   * {@link org.elasticsearch.common.inject.Binder}.
+   */
+  void asEagerSingleton();
 }

@@ -18,7 +18,6 @@ package org.elasticsearch.common.inject.spi;
 
 import org.elasticsearch.common.inject.Binding;
 import org.elasticsearch.common.inject.Key;
-
 import java.util.Set;
 
 /**
@@ -30,19 +29,19 @@ import java.util.Set;
  */
 public interface ConvertedConstantBinding<T> extends Binding<T>, HasDependencies {
 
-    /**
-     * Returns the converted value.
-     */
-    T getValue();
+  /**
+   * Returns the converted value.
+   */
+  T getValue();
 
-    /**
-     * Returns the key for the source binding. That binding can e retrieved from an injector using
-     * {@link org.elasticsearch.common.inject.Injector#getBinding(Key) Injector.getBinding(key)}.
-     */
-    Key<String> getSourceKey();
+  /**
+   * Returns the key for the source binding. That binding can e retrieved from an injector using
+   * {@link org.elasticsearch.common.inject.Injector#getBinding(Key) Injector.getBinding(key)}.
+   */
+  Key<String> getSourceKey();
 
-    /**
-     * Returns a singleton set containing only the converted key.
-     */
-    Set<Dependency<?>> getDependencies();
+  /**
+   * Returns a singleton set containing only the converted key.
+   */
+  Set<Dependency<?>> getDependencies();
 }

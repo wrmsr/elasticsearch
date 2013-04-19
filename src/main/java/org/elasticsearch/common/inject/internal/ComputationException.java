@@ -21,7 +21,7 @@ package org.elasticsearch.common.inject.internal;
  */
 public class ComputationException extends RuntimeException {
 
-    public ComputationException(Throwable cause) {
-        super(cause);
-    }
+  public ComputationException(Throwable cause) {
+    super(cause);
+  }
 }

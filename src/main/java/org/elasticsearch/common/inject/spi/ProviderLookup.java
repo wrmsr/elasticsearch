@@ -16,12 +16,11 @@
 
 package org.elasticsearch.common.inject.spi;
 
-import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.Key;
 import org.elasticsearch.common.inject.Provider;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import org.elasticsearch.common.inject.Binder;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkState;
 
 /**
  * A lookup of the provider for a type. Lookups are created explicitly in a module using
@@ -34,66 +33,65 @@ import static com.google.common.base.Preconditions.checkState;
  * @since 2.0
  */
 public final class ProviderLookup<T> implements Element {
-    private final Object source;
-    private final Key<T> key;
-    private Provider<T> delegate;
+  private final Object source;
+  private final Key<T> key;
+  private Provider<T> delegate;
 
-    public ProviderLookup(Object source, Key<T> key) {
-        this.source = checkNotNull(source, "source");
-        this.key = checkNotNull(key, "key");
-    }
+  public ProviderLookup(Object source, Key<T> key) {
+    this.source = checkNotNull(source, "source");
+    this.key = checkNotNull(key, "key");
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    public Key<T> getKey() {
-        return key;
-    }
+  public Key<T> getKey() {
+    return key;
+  }
 
-    public <T> T acceptVisitor(ElementVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+  public <T> T acceptVisitor(ElementVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 
-    /**
-     * Sets the actual provider.
-     *
-     * @throws IllegalStateException if the delegate is already set
-     */
-    public void initializeDelegate(Provider<T> delegate) {
-        checkState(this.delegate == null, "delegate already initialized");
-        this.delegate = checkNotNull(delegate, "delegate");
-    }
+  /**
+   * Sets the actual provider.
+   *
+   * @throws IllegalStateException if the delegate is already set
+   */
+  public void initializeDelegate(Provider<T> delegate) {
+    checkState(this.delegate == null, "delegate already initialized");
+    this.delegate = checkNotNull(delegate, "delegate");
+  }
 
-    public void applyTo(Binder binder) {
-        initializeDelegate(binder.withSource(getSource()).getProvider(key));
-    }
+  public void applyTo(Binder binder) {
+    initializeDelegate(binder.withSource(getSource()).getProvider(key));
+  }
 
-    /**
-     * Returns the delegate provider, or {@code null} if it has not yet been initialized. The delegate
-     * will be initialized when this element is processed, or otherwise used to create an injector.
-     */
-    public Provider<T> getDelegate() {
-        return delegate;
-    }
+  /**
+   * Returns the delegate provider, or {@code null} if it has not yet been initialized. The delegate
+   * will be initialized when this element is processed, or otherwise used to create an injector.
+   */
+  public Provider<T> getDelegate() {
+    return delegate;
+  }
 
-    /**
-     * Returns the looked up provider. The result is not valid until this lookup has been initialized,
-     * which usually happens when the injector is created. The provider will throw an {@code
-     * IllegalStateException} if you try to use it beforehand.
-     */
-    public Provider<T> getProvider() {
-        return new Provider<T>() {
-            public T get() {
-                checkState(delegate != null,
-                        "This Provider cannot be used until the Injector has been created.");
-                return delegate.get();
-            }
+  /**
+   * Returns the looked up provider. The result is not valid until this lookup has been initialized,
+   * which usually happens when the injector is created. The provider will throw an {@code
+   * IllegalStateException} if you try to use it beforehand.
+   */
+  public Provider<T> getProvider() {
+    return new Provider<T>() {
+      public T get() {
+        checkState(delegate != null,
+            "This Provider cannot be used until the Injector has been created.");
+        return delegate.get();
+      }
 
-            @Override
-            public String toString() {
-                return "Provider<" + key.getTypeLiteral() + ">";
-            }
-        };
-    }
+      @Override public String toString() {
+        return "Provider<" + key.getTypeLiteral() + ">";
+      }
+    };
+  }
 }

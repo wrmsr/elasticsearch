@@ -21,32 +21,30 @@ import org.elasticsearch.common.inject.binder.AnnotatedElementBuilder;
 /**
  * Returns a binder whose configuration information is hidden from its environment by default. See
  * {@link org.elasticsearch.common.inject.PrivateModule PrivateModule} for details.
- *
+ * 
  * @author jessewilson@google.com (Jesse Wilson)
  * @since 2.0
  */
 public interface PrivateBinder extends Binder {
 
-    /**
-     * Makes the binding for {@code key} available to the enclosing environment
-     */
-    void expose(Key<?> key);
+  /** Makes the binding for {@code key} available to the enclosing environment */
+  void expose(Key<?> key);
 
-    /**
-     * Makes a binding for {@code type} available to the enclosing environment. Use {@link
-     * org.elasticsearch.common.inject.binder.AnnotatedElementBuilder#annotatedWith(Class) annotatedWith()} to expose {@code type} with a
-     * binding annotation.
-     */
-    AnnotatedElementBuilder expose(Class<?> type);
+  /**
+   * Makes a binding for {@code type} available to the enclosing environment. Use {@link
+   * org.elasticsearch.common.inject.binder.AnnotatedElementBuilder#annotatedWith(Class) annotatedWith()} to expose {@code type} with a
+   * binding annotation.
+   */
+  AnnotatedElementBuilder expose(Class<?> type);
 
-    /**
-     * Makes a binding for {@code type} available to the enclosing environment. Use {@link
-     * AnnotatedElementBuilder#annotatedWith(Class) annotatedWith()} to expose {@code type} with a
-     * binding annotation.
-     */
-    AnnotatedElementBuilder expose(TypeLiteral<?> type);
+  /**
+   * Makes a binding for {@code type} available to the enclosing environment. Use {@link
+   * AnnotatedElementBuilder#annotatedWith(Class) annotatedWith()} to expose {@code type} with a
+   * binding annotation.
+   */
+  AnnotatedElementBuilder expose(TypeLiteral<?> type);
 
-    PrivateBinder withSource(Object source);
+  PrivateBinder withSource(Object source);
 
-    PrivateBinder skipSources(Class... classesToSkip);
+  PrivateBinder skipSources(Class... classesToSkip);
 }

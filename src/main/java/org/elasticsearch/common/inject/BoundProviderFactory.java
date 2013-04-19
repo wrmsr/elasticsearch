@@ -28,41 +28,40 @@ import org.elasticsearch.common.inject.spi.Dependency;
  */
 class BoundProviderFactory<T> implements InternalFactory<T>, CreationListener {
 
-    private final InjectorImpl injector;
-    final Key<? extends Provider<? extends T>> providerKey;
-    final Object source;
-    private InternalFactory<? extends Provider<? extends T>> providerFactory;
+  private final InjectorImpl injector;
+  final Key<? extends Provider<? extends T>> providerKey;
+  final Object source;
+  private InternalFactory<? extends Provider<? extends T>> providerFactory;
 
-    BoundProviderFactory(
-            InjectorImpl injector,
-            Key<? extends Provider<? extends T>> providerKey,
-            Object source) {
-        this.injector = injector;
-        this.providerKey = providerKey;
-        this.source = source;
-    }
+  BoundProviderFactory(
+      InjectorImpl injector,
+      Key<? extends Provider<? extends T>> providerKey,
+      Object source) {
+    this.injector = injector;
+    this.providerKey = providerKey;
+    this.source = source;
+  }
 
-    public void notify(Errors errors) {
-        try {
-            providerFactory = injector.getInternalFactory(providerKey, errors.withSource(source));
-        } catch (ErrorsException e) {
-            errors.merge(e.getErrors());
-        }
+  public void notify(Errors errors) {
+    try {
+      providerFactory = injector.getInternalFactory(providerKey, errors.withSource(source));
+    } catch (ErrorsException e) {
+      errors.merge(e.getErrors());
     }
+  }
 
-    public T get(Errors errors, InternalContext context, Dependency<?> dependency)
-            throws ErrorsException {
-        errors = errors.withSource(providerKey);
-        Provider<? extends T> provider = providerFactory.get(errors, context, dependency);
-        try {
-            return errors.checkForNull(provider.get(), source, dependency);
-        } catch (RuntimeException userException) {
-            throw errors.errorInProvider(userException).toException();
-        }
+  public T get(Errors errors, InternalContext context, Dependency<?> dependency)
+      throws ErrorsException {
+    errors = errors.withSource(providerKey);
+    Provider<? extends T> provider = providerFactory.get(errors, context, dependency);
+    try {
+      return errors.checkForNull(provider.get(), source, dependency);
+    } catch(RuntimeException userException) {
+      throw errors.errorInProvider(userException).toException();
     }
+  }
 
-    @Override
-    public String toString() {
-        return providerKey.toString();
-    }
+  @Override public String toString() {
+    return providerKey.toString();
+  }
 }

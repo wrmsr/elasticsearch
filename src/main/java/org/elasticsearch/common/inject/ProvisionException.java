@@ -16,14 +16,12 @@
 
 package org.elasticsearch.common.inject;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ImmutableList;
+import org.elasticsearch.common.inject.internal.ImmutableSet;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkArgument;
 import org.elasticsearch.common.inject.spi.Message;
-
 import java.util.Collection;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Indicates that there was a runtime failure while providing an instance.
@@ -34,37 +32,32 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public final class ProvisionException extends RuntimeException {
 
-    private final ImmutableSet<Message> messages;
+  private final ImmutableSet<Message> messages;
 
-    /**
-     * Creates a ConfigurationException containing {@code messages}.
-     */
-    public ProvisionException(Iterable<Message> messages) {
-        this.messages = ImmutableSet.copyOf(messages);
-        checkArgument(!this.messages.isEmpty());
-        initCause(Errors.getOnlyCause(this.messages));
-    }
+  /** Creates a ConfigurationException containing {@code messages}. */
+  public ProvisionException(Iterable<Message> messages) {
+    this.messages = ImmutableSet.copyOf(messages);
+    checkArgument(!this.messages.isEmpty());
+    initCause(Errors.getOnlyCause(this.messages));
+  }
 
-    public ProvisionException(String message, Throwable cause) {
-        super(cause);
-        this.messages = ImmutableSet.of(new Message(ImmutableList.of(), message, cause));
-    }
+  public ProvisionException(String message, Throwable cause) {
+    super(cause);
+    this.messages = ImmutableSet.of(new Message(ImmutableList.of(), message, cause));
+  }
 
-    public ProvisionException(String message) {
-        this.messages = ImmutableSet.of(new Message(message));
-    }
+  public ProvisionException(String message) {
+    this.messages = ImmutableSet.of(new Message(message));
+  }
 
-    /**
-     * Returns messages for the errors that caused this exception.
-     */
-    public Collection<Message> getErrorMessages() {
-        return messages;
-    }
+  /** Returns messages for the errors that caused this exception. */
+  public Collection<Message> getErrorMessages() {
+    return messages;
+  }
 
-    @Override
-    public String getMessage() {
-        return Errors.format("Guice provision errors", messages);
-    }
+  @Override public String getMessage() {
+    return Errors.format("Guice provision errors", messages);
+  }
 
-    private static final long serialVersionUID = 0;
+  private static final long serialVersionUID = 0;
 }

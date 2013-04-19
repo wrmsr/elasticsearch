@@ -24,26 +24,26 @@ import java.util.logging.Logger;
  * @author crazybob@google.com (Bob Lee)
  */
 public class Stopwatch {
-    private static final Logger logger = Logger.getLogger(Stopwatch.class.getName());
+  private static final Logger logger = Logger.getLogger(Stopwatch.class.getName());
 
-    private long start = System.currentTimeMillis();
+  private long start = System.currentTimeMillis();
 
-    /**
-     * Resets and returns elapsed time in milliseconds.
-     */
-    public long reset() {
-        long now = System.currentTimeMillis();
-        try {
-            return now - start;
-        } finally {
-            start = now;
-        }
+  /**
+   * Resets and returns elapsed time in milliseconds.
+   */
+  public long reset() {
+    long now = System.currentTimeMillis();
+    try {
+      return now - start;
+    } finally {
+      start = now;
     }
+  }
 
-    /**
-     * Resets and logs elapsed time in milliseconds.
-     */
-    public void resetAndLog(String label) {
-        logger.fine(label + ": " + reset() + "ms");
-    }
+  /**
+   * Resets and logs elapsed time in milliseconds.
+   */
+  public void resetAndLog(String label) {
+    logger.fine(label + ": " + reset() + "ms");
+  }
 }

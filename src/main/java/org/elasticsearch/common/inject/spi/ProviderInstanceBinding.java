@@ -18,7 +18,6 @@ package org.elasticsearch.common.inject.spi;
 
 import org.elasticsearch.common.inject.Binding;
 import org.elasticsearch.common.inject.Provider;
-
 import java.util.Set;
 
 /**
@@ -30,17 +29,17 @@ import java.util.Set;
  */
 public interface ProviderInstanceBinding<T> extends Binding<T>, HasDependencies {
 
-    /**
-     * Returns the user-supplied, unscoped provider.
-     */
-    Provider<? extends T> getProviderInstance();
+  /**
+   * Returns the user-supplied, unscoped provider.
+   */
+  Provider<? extends T> getProviderInstance();
 
-    /**
-     * Returns the field and method injection points of the provider, injected at injector-creation
-     * time only.
-     *
-     * @return a possibly empty set
-     */
-    Set<InjectionPoint> getInjectionPoints();
+  /**
+   * Returns the field and method injection points of the provider, injected at injector-creation
+   * time only.
+   *
+   * @return a possibly empty set
+   */
+  Set<InjectionPoint> getInjectionPoints();
 
 }

@@ -19,10 +19,8 @@ package org.elasticsearch.common.inject.spi;
 import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.ConfigurationException;
 import org.elasticsearch.common.inject.TypeLiteral;
-
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A request to inject the instance fields and methods of an instance. Requests are created
@@ -36,49 +34,49 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public final class InjectionRequest<T> implements Element {
 
-    private final Object source;
-    private final TypeLiteral<T> type;
-    private final T instance;
+  private final Object source;
+  private final TypeLiteral<T> type;
+  private final T instance;
 
-    public InjectionRequest(Object source, TypeLiteral<T> type, T instance) {
-        this.source = checkNotNull(source, "source");
-        this.type = checkNotNull(type, "type");
-        this.instance = checkNotNull(instance, "instance");
-    }
+  public InjectionRequest(Object source, TypeLiteral<T> type, T instance) {
+    this.source = checkNotNull(source, "source");
+    this.type = checkNotNull(type, "type");
+    this.instance = checkNotNull(instance, "instance");
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    public T getInstance() {
-        return instance;
-    }
+  public T getInstance() {
+    return instance;
+  }
 
-    public TypeLiteral<T> getType() {
-        return type;
-    }
+  public TypeLiteral<T> getType() {
+    return type;
+  }
 
-    /**
-     * Returns the instance methods and fields of {@code instance} that will be injected to fulfill
-     * this request.
-     *
-     * @return a possibly empty set of injection points. The set has a specified iteration order. All
-     *         fields are returned and then all methods. Within the fields, supertype fields are returned
-     *         before subtype fields. Similarly, supertype methods are returned before subtype methods.
-     * @throws ConfigurationException if there is a malformed injection point on the class of {@code
-     *                                instance}, such as a field with multiple binding annotations. The exception's {@link
-     *                                ConfigurationException#getPartialValue() partial value} is a {@code Set<InjectionPoint>}
-     *                                of the valid injection points.
-     */
-    public Set<InjectionPoint> getInjectionPoints() throws ConfigurationException {
-        return InjectionPoint.forInstanceMethodsAndFields(instance.getClass());
-    }
+  /**
+   * Returns the instance methods and fields of {@code instance} that will be injected to fulfill
+   * this request.
+   *
+   * @return a possibly empty set of injection points. The set has a specified iteration order. All
+   *      fields are returned and then all methods. Within the fields, supertype fields are returned
+   *      before subtype fields. Similarly, supertype methods are returned before subtype methods.
+   * @throws ConfigurationException if there is a malformed injection point on the class of {@code
+   *      instance}, such as a field with multiple binding annotations. The exception's {@link
+   *      ConfigurationException#getPartialValue() partial value} is a {@code Set<InjectionPoint>}
+   *      of the valid injection points.
+   */
+  public Set<InjectionPoint> getInjectionPoints() throws ConfigurationException {
+    return InjectionPoint.forInstanceMethodsAndFields(instance.getClass());
+  }
 
-    public <R> R acceptVisitor(ElementVisitor<R> visitor) {
-        return visitor.visit(this);
-    }
+  public <R> R acceptVisitor(ElementVisitor<R> visitor) {
+    return visitor.visit(this);
+  }
 
-    public void applyTo(Binder binder) {
-        binder.withSource(getSource()).requestInjection(type, instance);
-    }
+  public void applyTo(Binder binder) {
+    binder.withSource(getSource()).requestInjection(type, instance);
+  }
 }

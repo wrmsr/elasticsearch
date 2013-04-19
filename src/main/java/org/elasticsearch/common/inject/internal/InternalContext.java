@@ -16,9 +16,7 @@
 
 package org.elasticsearch.common.inject.internal;
 
-import com.google.common.collect.Maps;
 import org.elasticsearch.common.inject.spi.Dependency;
-
 import java.util.Map;
 
 /**
@@ -29,25 +27,25 @@ import java.util.Map;
  */
 public final class InternalContext {
 
-    private Map<Object, ConstructionContext<?>> constructionContexts = Maps.newHashMap();
-    private Dependency dependency;
+  private Map<Object, ConstructionContext<?>> constructionContexts = Maps.newHashMap();
+  private Dependency dependency;
 
-    @SuppressWarnings("unchecked")
-    public <T> ConstructionContext<T> getConstructionContext(Object key) {
-        ConstructionContext<T> constructionContext
-                = (ConstructionContext<T>) constructionContexts.get(key);
-        if (constructionContext == null) {
-            constructionContext = new ConstructionContext<T>();
-            constructionContexts.put(key, constructionContext);
-        }
-        return constructionContext;
+  @SuppressWarnings("unchecked")
+  public <T> ConstructionContext<T> getConstructionContext(Object key) {
+    ConstructionContext<T> constructionContext
+        = (ConstructionContext<T>) constructionContexts.get(key);
+    if (constructionContext == null) {
+      constructionContext = new ConstructionContext<T>();
+      constructionContexts.put(key, constructionContext);
     }
+    return constructionContext;
+  }
 
-    public Dependency getDependency() {
-        return dependency;
-    }
+  public Dependency getDependency() {
+    return dependency;
+  }
 
-    public void setDependency(Dependency dependency) {
-        this.dependency = dependency;
-    }
+  public void setDependency(Dependency dependency) {
+    this.dependency = dependency;
+  }
 }

@@ -27,12 +27,12 @@ import java.util.Set;
  */
 public interface HasDependencies {
 
-    /**
-     * Returns the known dependencies for this type. If this has dependencies whose values are not
-     * known statically, a dependency for the {@link org.elasticsearch.common.inject.Injector Injector} will be
-     * included in the returned set.
-     *
-     * @return a possibly empty set
-     */
-    Set<Dependency<?>> getDependencies();
+  /**
+   * Returns the known dependencies for this type. If this has dependencies whose values are not
+   * known statically, a dependency for the {@link org.elasticsearch.common.inject.Injector Injector} will be
+   * included in the returned set.
+   * 
+   * @return a possibly empty set
+   */
+  Set<Dependency<?>> getDependencies();
 }

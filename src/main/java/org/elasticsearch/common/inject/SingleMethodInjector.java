@@ -17,11 +17,12 @@
 package org.elasticsearch.common.inject;
 
 import org.elasticsearch.common.inject.InjectorImpl.MethodInvoker;
+import org.elasticsearch.common.inject.internal.BytecodeGen;
+import org.elasticsearch.common.inject.internal.BytecodeGen.Visibility;
 import org.elasticsearch.common.inject.internal.Errors;
 import org.elasticsearch.common.inject.internal.ErrorsException;
 import org.elasticsearch.common.inject.internal.InternalContext;
 import org.elasticsearch.common.inject.spi.InjectionPoint;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -30,59 +31,71 @@ import java.lang.reflect.Modifier;
  * Invokes an injectable method.
  */
 class SingleMethodInjector implements SingleMemberInjector {
-    final MethodInvoker methodInvoker;
-    final SingleParameterInjector<?>[] parameterInjectors;
-    final InjectionPoint injectionPoint;
+  final MethodInvoker methodInvoker;
+  final SingleParameterInjector<?>[] parameterInjectors;
+  final InjectionPoint injectionPoint;
 
-    public SingleMethodInjector(InjectorImpl injector, InjectionPoint injectionPoint, Errors errors)
-            throws ErrorsException {
-        this.injectionPoint = injectionPoint;
-        final Method method = (Method) injectionPoint.getMember();
-        methodInvoker = createMethodInvoker(method);
-        parameterInjectors = injector.getParametersInjectors(injectionPoint.getDependencies(), errors);
+  public SingleMethodInjector(InjectorImpl injector, InjectionPoint injectionPoint, Errors errors)
+      throws ErrorsException {
+    this.injectionPoint = injectionPoint;
+    final Method method = (Method) injectionPoint.getMember();
+    methodInvoker = createMethodInvoker(method);
+    parameterInjectors = injector.getParametersInjectors(injectionPoint.getDependencies(), errors);
+  }
+
+  private MethodInvoker createMethodInvoker(final Method method) {
+
+    // We can't use FastMethod if the method is private.
+    int modifiers = method.getModifiers();
+    if (!Modifier.isPrivate(modifiers) && !Modifier.isProtected(modifiers)) {
+      /*if[AOP]*/
+      final net.sf.cglib.reflect.FastMethod fastMethod
+          = BytecodeGen.newFastClass(method.getDeclaringClass(), Visibility.forMember(method))
+              .getMethod(method);
+
+      return new MethodInvoker() {
+        public Object invoke(Object target, Object... parameters)
+            throws IllegalAccessException, InvocationTargetException {
+          return fastMethod.invoke(target, parameters);
+        }
+      };
+      /*end[AOP]*/
     }
 
-    private MethodInvoker createMethodInvoker(final Method method) {
-
-        // We can't use FastMethod if the method is private.
-        int modifiers = method.getModifiers();
-        if (!Modifier.isPrivate(modifiers) && !Modifier.isProtected(modifiers)) {
-        }
-
-        if (!Modifier.isPublic(modifiers)) {
-            method.setAccessible(true);
-        }
-
-        return new MethodInvoker() {
-            public Object invoke(Object target, Object... parameters)
-                    throws IllegalAccessException, InvocationTargetException {
-                return method.invoke(target, parameters);
-            }
-        };
+    if (!Modifier.isPublic(modifiers)) {
+      method.setAccessible(true);
     }
 
-    public InjectionPoint getInjectionPoint() {
-        return injectionPoint;
+    return new MethodInvoker() {
+      public Object invoke(Object target, Object... parameters)
+          throws IllegalAccessException, InvocationTargetException {
+        return method.invoke(target, parameters);
+      }
+    };
+  }
+
+  public InjectionPoint getInjectionPoint() {
+    return injectionPoint;
+  }
+
+  public void inject(Errors errors, InternalContext context, Object o) {
+    Object[] parameters;
+    try {
+      parameters = SingleParameterInjector.getAll(errors, context, parameterInjectors);
+    } catch (ErrorsException e) {
+      errors.merge(e.getErrors());
+      return;
     }
 
-    public void inject(Errors errors, InternalContext context, Object o) {
-        Object[] parameters;
-        try {
-            parameters = SingleParameterInjector.getAll(errors, context, parameterInjectors);
-        } catch (ErrorsException e) {
-            errors.merge(e.getErrors());
-            return;
-        }
-
-        try {
-            methodInvoker.invoke(o, parameters);
-        } catch (IllegalAccessException e) {
-            throw new AssertionError(e); // a security manager is blocking us, we're hosed
-        } catch (InvocationTargetException userException) {
-            Throwable cause = userException.getCause() != null
-                    ? userException.getCause()
-                    : userException;
-            errors.withSource(injectionPoint).errorInjectingMethod(cause);
-        }
+    try {
+      methodInvoker.invoke(o, parameters);
+    } catch (IllegalAccessException e) {
+      throw new AssertionError(e); // a security manager is blocking us, we're hosed
+    } catch (InvocationTargetException userException) {
+      Throwable cause = userException.getCause() != null
+          ? userException.getCause()
+          : userException;
+      errors.withSource(injectionPoint).errorInjectingMethod(cause);
     }
+  }
 }

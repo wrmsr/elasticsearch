@@ -16,29 +16,28 @@
 
 package org.elasticsearch.common.inject.assistedinject;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import java.lang.annotation.Retention;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.lang.annotation.Target;
 
 /**
  * <p>Constructors annotated with {@code @AssistedInject} indicate that they can be instantiated by
  * the {@link FactoryProvider}. Each constructor must exactly match one corresponding factory method
  * within the factory interface.
- * <p/>
+ * 
  * <p>Constructor parameters must be either supplied by the factory interface and marked with
  * <code>@Assisted</code>, or they must be injectable.
+ * 
+ * @deprecated {@link FactoryProvider} now works better with the standard {@literal @Inject}
+ *     annotation. When using that annotation, parameters are matched by name and type rather than
+ *     by position. In addition, values that use the standard {@literal @Inject} constructor
+ *     annotation are eligible for method interception.
  *
  * @author jmourits@google.com (Jerome Mourits)
  * @author jessewilson@google.com (Jesse Wilson)
- * @deprecated {@link FactoryProvider} now works better with the standard {@literal @Inject}
- *             annotation. When using that annotation, parameters are matched by name and type rather than
- *             by position. In addition, values that use the standard {@literal @Inject} constructor
- *             annotation are eligible for method interception.
  */
 @Target({CONSTRUCTOR})
 @Retention(RUNTIME)
 @Deprecated
-public @interface AssistedInject {
-}
+public @interface AssistedInject {}

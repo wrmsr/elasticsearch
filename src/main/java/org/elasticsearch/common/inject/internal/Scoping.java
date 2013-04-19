@@ -22,7 +22,6 @@ import org.elasticsearch.common.inject.Singleton;
 import org.elasticsearch.common.inject.Stage;
 import org.elasticsearch.common.inject.binder.ScopedBindingBuilder;
 import org.elasticsearch.common.inject.spi.BindingScopingVisitor;
-
 import java.lang.annotation.Annotation;
 
 /**
@@ -33,191 +32,178 @@ import java.lang.annotation.Annotation;
  */
 public abstract class Scoping {
 
-    /**
-     * No scoping annotation has been applied. Note that this is different from {@code
-     * in(Scopes.NO_SCOPE)}, where the 'NO_SCOPE' has been explicitly applied.
-     */
-    public static final Scoping UNSCOPED = new Scoping() {
-        public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
-            return visitor.visitNoScoping();
-        }
+  /**
+   * No scoping annotation has been applied. Note that this is different from {@code
+   * in(Scopes.NO_SCOPE)}, where the 'NO_SCOPE' has been explicitly applied.
+   */
+  public static final Scoping UNSCOPED = new Scoping() {
+    public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
+      return visitor.visitNoScoping();
+    }
 
-        @Override
-        public Scope getScopeInstance() {
-            return Scopes.NO_SCOPE;
-        }
+    @Override public Scope getScopeInstance() {
+      return Scopes.NO_SCOPE;
+    }
 
-        @Override
-        public String toString() {
-            return Scopes.NO_SCOPE.toString();
-        }
+    @Override public String toString() {
+      return Scopes.NO_SCOPE.toString();
+    }
 
-        public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
-            // do nothing
-        }
+    public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
+      // do nothing
+    }
+  };
+
+  public static final Scoping SINGLETON_ANNOTATION = new Scoping() {
+    public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
+      return visitor.visitScopeAnnotation(Singleton.class);
+    }
+
+    @Override public Class<? extends Annotation> getScopeAnnotation() {
+      return Singleton.class;
+    }
+
+    @Override public String toString() {
+      return Singleton.class.getName();
+    }
+
+    public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
+      scopedBindingBuilder.in(Singleton.class);
+    }
+  };
+
+  public static final Scoping SINGLETON_INSTANCE = new Scoping() {
+    public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
+      return visitor.visitScope(Scopes.SINGLETON);
+    }
+
+    @Override public Scope getScopeInstance() {
+      return Scopes.SINGLETON;
+    }
+
+    @Override public String toString() {
+      return Scopes.SINGLETON.toString();
+    }
+
+    public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
+      scopedBindingBuilder.in(Scopes.SINGLETON);
+    }
+  };
+
+  public static final Scoping EAGER_SINGLETON = new Scoping() {
+    public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
+      return visitor.visitEagerSingleton();
+    }
+
+    @Override public Scope getScopeInstance() {
+      return Scopes.SINGLETON;
+    }
+
+    @Override public String toString() {
+      return "eager singleton";
+    }
+
+    public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
+      scopedBindingBuilder.asEagerSingleton();
+    }
+  };
+
+  public static Scoping forAnnotation(final Class<? extends Annotation> scopingAnnotation) {
+    if (scopingAnnotation == Singleton.class) {
+      return SINGLETON_ANNOTATION;
+    }
+
+    return new Scoping() {
+      public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
+        return visitor.visitScopeAnnotation(scopingAnnotation);
+      }
+
+      @Override public Class<? extends Annotation> getScopeAnnotation() {
+        return scopingAnnotation;
+      }
+
+      @Override public String toString() {
+        return scopingAnnotation.getName();
+      }
+
+      public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
+        scopedBindingBuilder.in(scopingAnnotation);
+      }
     };
+  }
 
-    public static final Scoping SINGLETON_ANNOTATION = new Scoping() {
-        public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
-            return visitor.visitScopeAnnotation(Singleton.class);
-        }
+  public static Scoping forInstance(final Scope scope) {
+    if (scope == Scopes.SINGLETON) {
+      return SINGLETON_INSTANCE;
+    }
 
-        @Override
-        public Class<? extends Annotation> getScopeAnnotation() {
-            return Singleton.class;
-        }
+    return new Scoping() {
+      public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
+        return visitor.visitScope(scope);
+      }
 
-        @Override
-        public String toString() {
-            return Singleton.class.getName();
-        }
+      @Override public Scope getScopeInstance() {
+        return scope;
+      }
 
-        public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
-            scopedBindingBuilder.in(Singleton.class);
-        }
+      @Override public String toString() {
+        return scope.toString();
+      }
+
+      public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
+        scopedBindingBuilder.in(scope);
+      }
     };
+  }
 
-    public static final Scoping SINGLETON_INSTANCE = new Scoping() {
-        public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
-            return visitor.visitScope(Scopes.SINGLETON);
-        }
+  /**
+   * Returns true if this scope was explicitly applied. If no scope was explicitly applied then the
+   * scoping annotation will be used.
+   */
+  public boolean isExplicitlyScoped() {
+    return this != UNSCOPED;
+  }
 
-        @Override
-        public Scope getScopeInstance() {
-            return Scopes.SINGLETON;
-        }
+  /**
+   * Returns true if this is the default scope. In this case a new instance will be provided for
+   * each injection.
+   */
+  public boolean isNoScope() {
+    return getScopeInstance() == Scopes.NO_SCOPE;
+  }
 
-        @Override
-        public String toString() {
-            return Scopes.SINGLETON.toString();
-        }
-
-        public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
-            scopedBindingBuilder.in(Scopes.SINGLETON);
-        }
-    };
-
-    public static final Scoping EAGER_SINGLETON = new Scoping() {
-        public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
-            return visitor.visitEagerSingleton();
-        }
-
-        @Override
-        public Scope getScopeInstance() {
-            return Scopes.SINGLETON;
-        }
-
-        @Override
-        public String toString() {
-            return "eager singleton";
-        }
-
-        public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
-            scopedBindingBuilder.asEagerSingleton();
-        }
-    };
-
-    public static Scoping forAnnotation(final Class<? extends Annotation> scopingAnnotation) {
-        if (scopingAnnotation == Singleton.class) {
-            return SINGLETON_ANNOTATION;
-        }
-
-        return new Scoping() {
-            public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
-                return visitor.visitScopeAnnotation(scopingAnnotation);
-            }
-
-            @Override
-            public Class<? extends Annotation> getScopeAnnotation() {
-                return scopingAnnotation;
-            }
-
-            @Override
-            public String toString() {
-                return scopingAnnotation.getName();
-            }
-
-            public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
-                scopedBindingBuilder.in(scopingAnnotation);
-            }
-        };
+  /**
+   * Returns true if this scope is a singleton that should be loaded eagerly in {@code stage}.
+   */
+  public boolean isEagerSingleton(Stage stage) {
+    if (this == EAGER_SINGLETON) {
+      return true;
     }
 
-    public static Scoping forInstance(final Scope scope) {
-        if (scope == Scopes.SINGLETON) {
-            return SINGLETON_INSTANCE;
-        }
-
-        return new Scoping() {
-            public <V> V acceptVisitor(BindingScopingVisitor<V> visitor) {
-                return visitor.visitScope(scope);
-            }
-
-            @Override
-            public Scope getScopeInstance() {
-                return scope;
-            }
-
-            @Override
-            public String toString() {
-                return scope.toString();
-            }
-
-            public void applyTo(ScopedBindingBuilder scopedBindingBuilder) {
-                scopedBindingBuilder.in(scope);
-            }
-        };
+    if (stage == Stage.PRODUCTION) {
+      return this == SINGLETON_ANNOTATION || this == SINGLETON_INSTANCE;
     }
 
-    /**
-     * Returns true if this scope was explicitly applied. If no scope was explicitly applied then the
-     * scoping annotation will be used.
-     */
-    public boolean isExplicitlyScoped() {
-        return this != UNSCOPED;
-    }
+    return false;
+  }
 
-    /**
-     * Returns true if this is the default scope. In this case a new instance will be provided for
-     * each injection.
-     */
-    public boolean isNoScope() {
-        return getScopeInstance() == Scopes.NO_SCOPE;
-    }
+  /**
+   * Returns the scope instance, or {@code null} if that isn't known for this instance.
+   */
+  public Scope getScopeInstance() {
+    return null;
+  }
 
-    /**
-     * Returns true if this scope is a singleton that should be loaded eagerly in {@code stage}.
-     */
-    public boolean isEagerSingleton(Stage stage) {
-        if (this == EAGER_SINGLETON) {
-            return true;
-        }
+  /**
+   * Returns the scope annotation, or {@code null} if that isn't known for this instance.
+   */
+  public Class<? extends Annotation> getScopeAnnotation() {
+    return null;
+  }
 
-        if (stage == Stage.PRODUCTION) {
-            return this == SINGLETON_ANNOTATION || this == SINGLETON_INSTANCE;
-        }
+  public abstract <V> V acceptVisitor(BindingScopingVisitor<V> visitor);
 
-        return false;
-    }
+  public abstract void applyTo(ScopedBindingBuilder scopedBindingBuilder);
 
-    /**
-     * Returns the scope instance, or {@code null} if that isn't known for this instance.
-     */
-    public Scope getScopeInstance() {
-        return null;
-    }
-
-    /**
-     * Returns the scope annotation, or {@code null} if that isn't known for this instance.
-     */
-    public Class<? extends Annotation> getScopeAnnotation() {
-        return null;
-    }
-
-    public abstract <V> V acceptVisitor(BindingScopingVisitor<V> visitor);
-
-    public abstract void applyTo(ScopedBindingBuilder scopedBindingBuilder);
-
-    private Scoping() {
-    }
+  private Scoping() {}
 }

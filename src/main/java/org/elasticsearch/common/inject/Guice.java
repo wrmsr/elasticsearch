@@ -21,7 +21,7 @@ import java.util.Arrays;
 /**
  * The entry point to the Guice framework. Creates {@link Injector}s from
  * {@link Module}s.
- * <p/>
+ *
  * <p>Guice supports a model of development that draws clear boundaries between
  * APIs, Implementations of these APIs, Modules which configure these
  * implementations, and finally Applications which consist of a collection of
@@ -47,52 +47,51 @@ import java.util.Arrays;
  */
 public final class Guice {
 
-    private Guice() {
-    }
+  private Guice() {}
 
-    /**
-     * Creates an injector for the given set of modules.
-     *
-     * @throws CreationException if one or more errors occur during Injector
-     *                           construction
-     */
-    public static Injector createInjector(Module... modules) {
-        return createInjector(Arrays.asList(modules));
-    }
+  /**
+   * Creates an injector for the given set of modules.
+   *
+   * @throws CreationException if one or more errors occur during Injector
+   *     construction
+   */
+  public static Injector createInjector(Module... modules) {
+    return createInjector(Arrays.asList(modules));
+  }
 
-    /**
-     * Creates an injector for the given set of modules.
-     *
-     * @throws CreationException if one or more errors occur during Injector
-     *                           creation
-     */
-    public static Injector createInjector(Iterable<? extends Module> modules) {
-        return createInjector(Stage.DEVELOPMENT, modules);
-    }
+  /**
+   * Creates an injector for the given set of modules.
+   *
+   * @throws CreationException if one or more errors occur during Injector
+   *     creation
+   */
+  public static Injector createInjector(Iterable<? extends Module> modules) {
+    return createInjector(Stage.DEVELOPMENT, modules);
+  }
 
-    /**
-     * Creates an injector for the given set of modules, in a given development
-     * stage.
-     *
-     * @throws CreationException if one or more errors occur during Injector
-     *                           creation
-     */
-    public static Injector createInjector(Stage stage, Module... modules) {
-        return createInjector(stage, Arrays.asList(modules));
-    }
+  /**
+   * Creates an injector for the given set of modules, in a given development
+   * stage.
+   *
+   * @throws CreationException if one or more errors occur during Injector
+   *     creation
+   */
+  public static Injector createInjector(Stage stage, Module... modules) {
+    return createInjector(stage, Arrays.asList(modules));
+  }
 
-    /**
-     * Creates an injector for the given set of modules, in a given development
-     * stage.
-     *
-     * @throws CreationException if one or more errors occur during Injector
-     *                           construction
-     */
-    public static Injector createInjector(Stage stage,
-                                          Iterable<? extends Module> modules) {
-        return new InjectorBuilder()
-                .stage(stage)
-                .addModules(modules)
-                .build();
-    }
+  /**
+   * Creates an injector for the given set of modules, in a given development
+   * stage.
+   *
+   * @throws CreationException if one or more errors occur during Injector
+   *     construction
+   */
+  public static Injector createInjector(Stage stage,
+      Iterable<? extends Module> modules) {
+    return new InjectorBuilder()
+        .stage(stage)
+        .addModules(modules)
+        .build();
+  }
 }

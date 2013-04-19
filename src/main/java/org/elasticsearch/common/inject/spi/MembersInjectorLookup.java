@@ -19,9 +19,8 @@ package org.elasticsearch.common.inject.spi;
 import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.MembersInjector;
 import org.elasticsearch.common.inject.TypeLiteral;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkState;
 
 /**
  * A lookup of the members injector for a type. Lookups are created explicitly in a module using
@@ -35,70 +34,69 @@ import static com.google.common.base.Preconditions.checkState;
  */
 public final class MembersInjectorLookup<T> implements Element {
 
-    private final Object source;
-    private final TypeLiteral<T> type;
-    private MembersInjector<T> delegate;
+  private final Object source;
+  private final TypeLiteral<T> type;
+  private MembersInjector<T> delegate;
 
-    public MembersInjectorLookup(Object source, TypeLiteral<T> type) {
-        this.source = checkNotNull(source, "source");
-        this.type = checkNotNull(type, "type");
-    }
+  public MembersInjectorLookup(Object source, TypeLiteral<T> type) {
+    this.source = checkNotNull(source, "source");
+    this.type = checkNotNull(type, "type");
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    /**
-     * Gets the type containing the members to be injected.
-     */
-    public TypeLiteral<T> getType() {
-        return type;
-    }
+  /**
+   * Gets the type containing the members to be injected.
+   */
+  public TypeLiteral<T> getType() {
+    return type;
+  }
 
-    public <T> T acceptVisitor(ElementVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+  public <T> T acceptVisitor(ElementVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 
-    /**
-     * Sets the actual members injector.
-     *
-     * @throws IllegalStateException if the delegate is already set
-     */
-    public void initializeDelegate(MembersInjector<T> delegate) {
-        checkState(this.delegate == null, "delegate already initialized");
-        this.delegate = checkNotNull(delegate, "delegate");
-    }
+  /**
+   * Sets the actual members injector.
+   *
+   * @throws IllegalStateException if the delegate is already set
+   */
+  public void initializeDelegate(MembersInjector<T> delegate) {
+    checkState(this.delegate == null, "delegate already initialized");
+    this.delegate = checkNotNull(delegate, "delegate");
+  }
 
-    public void applyTo(Binder binder) {
-        initializeDelegate(binder.withSource(getSource()).getMembersInjector(type));
-    }
+  public void applyTo(Binder binder) {
+    initializeDelegate(binder.withSource(getSource()).getMembersInjector(type));
+  }
 
-    /**
-     * Returns the delegate members injector, or {@code null} if it has not yet been initialized.
-     * The delegate will be initialized when this element is processed, or otherwise used to create
-     * an injector.
-     */
-    public MembersInjector<T> getDelegate() {
-        return delegate;
-    }
+  /**
+   * Returns the delegate members injector, or {@code null} if it has not yet been initialized.
+   * The delegate will be initialized when this element is processed, or otherwise used to create
+   * an injector.
+   */
+  public MembersInjector<T> getDelegate() {
+    return delegate;
+  }
 
-    /**
-     * Returns the looked up members injector. The result is not valid until this lookup has been
-     * initialized, which usually happens when the injector is created. The members injector will
-     * throw an {@code IllegalStateException} if you try to use it beforehand.
-     */
-    public MembersInjector<T> getMembersInjector() {
-        return new MembersInjector<T>() {
-            public void injectMembers(T instance) {
-                checkState(delegate != null,
-                        "This MembersInjector cannot be used until the Injector has been created.");
-                delegate.injectMembers(instance);
-            }
+  /**
+   * Returns the looked up members injector. The result is not valid until this lookup has been
+   * initialized, which usually happens when the injector is created. The members injector will
+   * throw an {@code IllegalStateException} if you try to use it beforehand.
+   */
+  public MembersInjector<T> getMembersInjector() {
+    return new MembersInjector<T>() {
+      public void injectMembers(T instance) {
+        checkState(delegate != null,
+            "This MembersInjector cannot be used until the Injector has been created.");
+        delegate.injectMembers(instance);
+      }
 
-            @Override
-            public String toString() {
-                return "MembersInjector<" + type + ">";
-            }
-        };
-    }
+      @Override public String toString() {
+        return "MembersInjector<" + type + ">";
+      }
+    };
+  }
 }

@@ -26,28 +26,27 @@ import java.util.Map;
  */
 public class ToStringBuilder {
 
-    // Linked hash map ensures ordering.
-    final Map<String, Object> map = new LinkedHashMap<String, Object>();
+  // Linked hash map ensures ordering.
+  final Map<String, Object> map = new LinkedHashMap<String, Object>();
 
-    final String name;
+  final String name;
 
-    public ToStringBuilder(String name) {
-        this.name = name;
+  public ToStringBuilder(String name) {
+    this.name = name;
+  }
+
+  public ToStringBuilder(Class type) {
+    this.name = type.getSimpleName();
+  }
+
+  public ToStringBuilder add(String name, Object value) {
+    if (map.put(name, value) != null) {
+      throw new RuntimeException("Duplicate names: " + name);
     }
+    return this;
+  }
 
-    public ToStringBuilder(Class type) {
-        this.name = type.getSimpleName();
-    }
-
-    public ToStringBuilder add(String name, Object value) {
-        if (map.put(name, value) != null) {
-            throw new RuntimeException("Duplicate names: " + name);
-        }
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        return name + map.toString().replace('{', '[').replace('}', ']');
-    }
+  @Override public String toString() {
+    return name + map.toString().replace('{', '[').replace('}', ']');
+  }
 }

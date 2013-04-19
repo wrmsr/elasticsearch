@@ -19,6 +19,8 @@ package org.elasticsearch.common.inject;
 import org.elasticsearch.common.inject.internal.Errors;
 import org.elasticsearch.common.inject.internal.ErrorsException;
 import org.elasticsearch.common.inject.internal.FailableCache;
+import org.elasticsearch.common.inject.internal.ImmutableList;
+import static org.elasticsearch.common.inject.internal.Iterables.concat;
 import org.elasticsearch.common.inject.spi.InjectionPoint;
 
 /**
@@ -27,50 +29,59 @@ import org.elasticsearch.common.inject.spi.InjectionPoint;
  * @author jessewilson@google.com (Jesse Wilson)
  */
 class ConstructorInjectorStore {
-    private final InjectorImpl injector;
+  private final InjectorImpl injector;
 
-    private final FailableCache<TypeLiteral<?>, ConstructorInjector<?>> cache
-            = new FailableCache<TypeLiteral<?>, ConstructorInjector<?>>() {
-        @SuppressWarnings("unchecked")
-        protected ConstructorInjector<?> create(TypeLiteral<?> type, Errors errors)
-                throws ErrorsException {
-            return createConstructor(type, errors);
-        }
-    };
+  private final FailableCache<TypeLiteral<?>, ConstructorInjector<?>>  cache
+      = new FailableCache<TypeLiteral<?>, ConstructorInjector<?>> () {
+    @SuppressWarnings("unchecked")
+    protected ConstructorInjector<?> create(TypeLiteral<?> type, Errors errors)
+        throws ErrorsException {
+      return createConstructor(type, errors);
+    }
+  };
 
-    ConstructorInjectorStore(InjectorImpl injector) {
-        this.injector = injector;
+  ConstructorInjectorStore(InjectorImpl injector) {
+    this.injector = injector;
+  }
+
+  /**
+   * Returns a new complete constructor injector with injection listeners registered.
+   */
+  @SuppressWarnings("unchecked") // the ConstructorInjector type always agrees with the passed type
+  public <T> ConstructorInjector<T> get(TypeLiteral<T> key, Errors errors) throws ErrorsException {
+    return (ConstructorInjector<T>) cache.get(key, errors);
+  }
+
+  private <T> ConstructorInjector<T> createConstructor(TypeLiteral<T> type, Errors errors)
+      throws ErrorsException {
+    int numErrorsBefore = errors.size();
+
+    InjectionPoint injectionPoint;
+    try {
+      injectionPoint = InjectionPoint.forConstructorOf(type);
+    } catch (ConfigurationException e) {
+      errors.merge(e.getErrorMessages());
+      throw errors.toException();
     }
 
-    /**
-     * Returns a new complete constructor injector with injection listeners registered.
-     */
-    @SuppressWarnings("unchecked") // the ConstructorInjector type always agrees with the passed type
-    public <T> ConstructorInjector<T> get(TypeLiteral<T> key, Errors errors) throws ErrorsException {
-        return (ConstructorInjector<T>) cache.get(key, errors);
-    }
+    SingleParameterInjector<?>[] constructorParameterInjectors
+        = injector.getParametersInjectors(injectionPoint.getDependencies(), errors);
+    MembersInjectorImpl<T> membersInjector = injector.membersInjectorStore.get(type, errors);
 
-    private <T> ConstructorInjector<T> createConstructor(TypeLiteral<T> type, Errors errors)
-            throws ErrorsException {
-        int numErrorsBefore = errors.size();
+    /*if[AOP]*/
+    ImmutableList<MethodAspect> injectorAspects = injector.state.getMethodAspects();
+    ImmutableList<MethodAspect> methodAspects = membersInjector.getAddedAspects().isEmpty()
+        ? injectorAspects
+        : ImmutableList.copyOf(concat(injectorAspects, membersInjector.getAddedAspects()));
+    ConstructionProxyFactory<T> factory = new ProxyFactory<T>(injectionPoint, methodAspects);
+    /*end[AOP]*/
+    /*if[NO_AOP]
+    ConstructionProxyFactory<T> factory = new DefaultConstructionProxyFactory<T>(injectionPoint);
+    end[NO_AOP]*/
 
-        InjectionPoint injectionPoint;
-        try {
-            injectionPoint = InjectionPoint.forConstructorOf(type);
-        } catch (ConfigurationException e) {
-            errors.merge(e.getErrorMessages());
-            throw errors.toException();
-        }
+    errors.throwIfNewErrors(numErrorsBefore);
 
-        SingleParameterInjector<?>[] constructorParameterInjectors
-                = injector.getParametersInjectors(injectionPoint.getDependencies(), errors);
-        MembersInjectorImpl<T> membersInjector = injector.membersInjectorStore.get(type, errors);
-
-        ConstructionProxyFactory<T> factory = new DefaultConstructionProxyFactory<T>(injectionPoint);
-
-        errors.throwIfNewErrors(numErrorsBefore);
-
-        return new ConstructorInjector<T>(membersInjector.getInjectionPoints(), factory.create(),
-                constructorParameterInjectors, membersInjector);
-    }
+    return new ConstructorInjector<T>(membersInjector.getInjectionPoints(), factory.create(),
+        constructorParameterInjectors, membersInjector);
+  }
 }

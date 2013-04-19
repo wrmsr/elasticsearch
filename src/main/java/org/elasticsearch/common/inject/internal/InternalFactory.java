@@ -25,14 +25,13 @@ import org.elasticsearch.common.inject.spi.Dependency;
  */
 public interface InternalFactory<T> {
 
-    /**
-     * Creates an object to be injected.
-     *
-     * @param context of this injection
-     * @return instance to be injected
-     * @throws org.elasticsearch.common.inject.internal.ErrorsException
-     *          if a value cannot be provided
-     */
-    T get(Errors errors, InternalContext context, Dependency<?> dependency)
-            throws ErrorsException;
+  /**
+   * Creates an object to be injected.
+   *
+   * @param context of this injection
+   * @throws org.elasticsearch.common.inject.internal.ErrorsException if a value cannot be provided
+   * @return instance to be injected
+   */
+  T get(Errors errors, InternalContext context, Dependency<?> dependency)
+      throws ErrorsException;
 }

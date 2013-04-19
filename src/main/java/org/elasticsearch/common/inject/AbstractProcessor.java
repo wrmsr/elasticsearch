@@ -17,14 +17,23 @@
 package org.elasticsearch.common.inject;
 
 import org.elasticsearch.common.inject.internal.Errors;
-import org.elasticsearch.common.inject.spi.*;
-
+import org.elasticsearch.common.inject.spi.Element;
+import org.elasticsearch.common.inject.spi.ElementVisitor;
+import org.elasticsearch.common.inject.spi.InjectionRequest;
+import org.elasticsearch.common.inject.spi.MembersInjectorLookup;
+import org.elasticsearch.common.inject.spi.Message;
+import org.elasticsearch.common.inject.spi.PrivateElements;
+import org.elasticsearch.common.inject.spi.ProviderLookup;
+import org.elasticsearch.common.inject.spi.ScopeBinding;
+import org.elasticsearch.common.inject.spi.StaticInjectionRequest;
+import org.elasticsearch.common.inject.spi.TypeConverterBinding;
+import org.elasticsearch.common.inject.spi.TypeListenerBinding;
 import java.util.Iterator;
 import java.util.List;
 
 /**
  * Abstract base class for creating an injector from module elements.
- * <p/>
+ *
  * <p>Extending classes must return {@code true} from any overridden
  * {@code visit*()} methods, in order for the element processor to remove the
  * handled element.
@@ -33,74 +42,81 @@ import java.util.List;
  */
 abstract class AbstractProcessor implements ElementVisitor<Boolean> {
 
-    protected Errors errors;
-    protected InjectorImpl injector;
+  protected Errors errors;
+  protected InjectorImpl injector;
 
-    protected AbstractProcessor(Errors errors) {
-        this.errors = errors;
+  protected AbstractProcessor(Errors errors) {
+    this.errors = errors;
+  }
+
+  public void process(Iterable<InjectorShell> isolatedInjectorBuilders) {
+    for (InjectorShell injectorShell : isolatedInjectorBuilders) {
+      process(injectorShell.getInjector(), injectorShell.getElements());
     }
+  }
 
-    public void process(Iterable<InjectorShell> isolatedInjectorBuilders) {
-        for (InjectorShell injectorShell : isolatedInjectorBuilders) {
-            process(injectorShell.getInjector(), injectorShell.getElements());
+  public void process(InjectorImpl injector, List<Element> elements) {
+    Errors errorsAnyElement = this.errors;
+    this.injector = injector;
+    try {
+      for (Iterator<Element> i = elements.iterator(); i.hasNext(); ) {
+        Element element = i.next();
+        this.errors = errorsAnyElement.withSource(element.getSource());
+        Boolean allDone = element.acceptVisitor(this);
+        if (allDone) {
+          i.remove();
         }
+      }
+    } finally {
+      this.errors = errorsAnyElement;
+      this.injector = null;
     }
+  }
 
-    public void process(InjectorImpl injector, List<Element> elements) {
-        Errors errorsAnyElement = this.errors;
-        this.injector = injector;
-        try {
-            for (Iterator<Element> i = elements.iterator(); i.hasNext(); ) {
-                Element element = i.next();
-                this.errors = errorsAnyElement.withSource(element.getSource());
-                Boolean allDone = element.acceptVisitor(this);
-                if (allDone) {
-                    i.remove();
-                }
-            }
-        } finally {
-            this.errors = errorsAnyElement;
-            this.injector = null;
-        }
-    }
+  public Boolean visit(Message message) {
+    return false;
+  }
 
-    public Boolean visit(Message message) {
-        return false;
-    }
+  /*if[AOP]*/
+  public Boolean visit(
+      org.elasticsearch.common.inject.spi.InterceptorBinding interceptorBinding) {
+    return false;
+  }
+  /*end[AOP]*/
 
-    public Boolean visit(ScopeBinding scopeBinding) {
-        return false;
-    }
+  public Boolean visit(ScopeBinding scopeBinding) {
+    return false;
+  }
 
-    public Boolean visit(InjectionRequest injectionRequest) {
-        return false;
-    }
+  public Boolean visit(InjectionRequest injectionRequest) {
+    return false;
+  }
 
-    public Boolean visit(StaticInjectionRequest staticInjectionRequest) {
-        return false;
-    }
+  public Boolean visit(StaticInjectionRequest staticInjectionRequest) {
+    return false;
+  }
 
-    public Boolean visit(TypeConverterBinding typeConverterBinding) {
-        return false;
-    }
+  public Boolean visit(TypeConverterBinding typeConverterBinding) {
+    return false;
+  }
 
-    public <T> Boolean visit(Binding<T> binding) {
-        return false;
-    }
+  public <T> Boolean visit(Binding<T> binding) {
+    return false;
+  }
 
-    public <T> Boolean visit(ProviderLookup<T> providerLookup) {
-        return false;
-    }
+  public <T> Boolean visit(ProviderLookup<T> providerLookup) {
+    return false;
+  }
 
-    public Boolean visit(PrivateElements privateElements) {
-        return false;
-    }
+  public Boolean visit(PrivateElements privateElements) {
+    return false;
+  }
 
-    public <T> Boolean visit(MembersInjectorLookup<T> lookup) {
-        return false;
-    }
+  public <T> Boolean visit(MembersInjectorLookup<T> lookup) {
+    return false;
+  }
 
-    public Boolean visit(TypeListenerBinding binding) {
-        return false;
-    }
+  public Boolean visit(TypeListenerBinding binding) {
+    return false;
+  }
 }

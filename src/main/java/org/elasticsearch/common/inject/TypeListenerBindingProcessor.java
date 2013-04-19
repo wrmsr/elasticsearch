@@ -26,13 +26,12 @@ import org.elasticsearch.common.inject.spi.TypeListenerBinding;
  */
 class TypeListenerBindingProcessor extends AbstractProcessor {
 
-    TypeListenerBindingProcessor(Errors errors) {
-        super(errors);
-    }
+  TypeListenerBindingProcessor(Errors errors) {
+    super(errors);
+  }
 
-    @Override
-    public Boolean visit(TypeListenerBinding binding) {
-        injector.state.addTypeListener(binding);
-        return true;
-    }
+  @Override public Boolean visit(TypeListenerBinding binding) {
+    injector.state.addTypeListener(binding);
+    return true;
+  }
 }

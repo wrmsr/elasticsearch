@@ -17,42 +17,40 @@
 package org.elasticsearch.common.inject.internal;
 
 import org.elasticsearch.common.inject.TypeLiteral;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import org.elasticsearch.common.inject.matcher.Matcher;
 import org.elasticsearch.common.inject.spi.TypeConverter;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author crazybob@google.com (Bob Lee)
  */
 public final class MatcherAndConverter {
 
-    private final Matcher<? super TypeLiteral<?>> typeMatcher;
-    private final TypeConverter typeConverter;
-    private final Object source;
+  private final Matcher<? super TypeLiteral<?>> typeMatcher;
+  private final TypeConverter typeConverter;
+  private final Object source;
 
-    public MatcherAndConverter(Matcher<? super TypeLiteral<?>> typeMatcher,
-                               TypeConverter typeConverter, Object source) {
-        this.typeMatcher = checkNotNull(typeMatcher, "type matcher");
-        this.typeConverter = checkNotNull(typeConverter, "converter");
-        this.source = source;
-    }
+  public MatcherAndConverter(Matcher<? super TypeLiteral<?>> typeMatcher,
+      TypeConverter typeConverter, Object source) {
+    this.typeMatcher = checkNotNull(typeMatcher, "type matcher");
+    this.typeConverter = checkNotNull(typeConverter, "converter");
+    this.source = source;
+  }
 
-    public TypeConverter getTypeConverter() {
-        return typeConverter;
-    }
+  public TypeConverter getTypeConverter() {
+    return typeConverter;
+  }
 
-    public Matcher<? super TypeLiteral<?>> getTypeMatcher() {
-        return typeMatcher;
-    }
+  public Matcher<? super TypeLiteral<?>> getTypeMatcher() {
+    return typeMatcher;
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    @Override
-    public String toString() {
-        return typeConverter + " which matches " + typeMatcher
-                + " (bound at " + source + ")";
-    }
+  @Override public String toString() {
+    return typeConverter + " which matches " + typeMatcher
+        + " (bound at " + source + ")";
+  }
 }

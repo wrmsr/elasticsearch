@@ -16,17 +16,15 @@
 
 package org.elasticsearch.common.inject;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.elasticsearch.common.inject.internal.Errors;
 import org.elasticsearch.common.inject.internal.ErrorsException;
+import org.elasticsearch.common.inject.internal.Lists;
+import org.elasticsearch.common.inject.internal.Maps;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import org.elasticsearch.common.inject.spi.InjectionPoint;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Manages and injects instances at injector-creation time. This is made more complicated by
@@ -36,129 +34,122 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author jessewilson@google.com (Jesse Wilson)
  */
 class Initializer {
-    /**
-     * the only thread that we'll use to inject members.
-     */
-    private final Thread creatingThread = Thread.currentThread();
+  /** the only thread that we'll use to inject members. */
+  private final Thread creatingThread = Thread.currentThread();
 
-    /**
-     * zero means everything is injected.
-     */
-    private final CountDownLatch ready = new CountDownLatch(1);
+  /** zero means everything is injected. */
+  private final CountDownLatch ready = new CountDownLatch(1);
 
-    /**
-     * Maps instances that need injection to a source that registered them
-     */
-    private final Map<Object, InjectableReference<?>> pendingInjection = Maps.newIdentityHashMap();
+  /** Maps instances that need injection to a source that registered them */
+  private final Map<Object, InjectableReference<?>> pendingInjection = Maps.newIdentityHashMap();
 
-    /**
-     * Registers an instance for member injection when that step is performed.
-     *
-     * @param instance an instance that optionally has members to be injected (each annotated with
-     * @param source   the source location that this injection was requested
-     * @Inject).
-     */
-    public <T> Initializable<T> requestInjection(InjectorImpl injector, T instance, Object source,
-                                                 Set<InjectionPoint> injectionPoints) {
-        checkNotNull(source);
+  /**
+   * Registers an instance for member injection when that step is performed.
+   *
+   * @param instance an instance that optionally has members to be injected (each annotated with
+   *      @Inject).
+   * @param source the source location that this injection was requested
+   */
+  public <T> Initializable<T> requestInjection(InjectorImpl injector, T instance, Object source,
+      Set<InjectionPoint> injectionPoints) {
+    checkNotNull(source);
 
-        // short circuit if the object has no injections
-        if (instance == null
-                || (injectionPoints.isEmpty() && !injector.membersInjectorStore.hasTypeListeners())) {
-            return Initializables.of(instance);
-        }
+    // short circuit if the object has no injections
+    if (instance == null
+        || (injectionPoints.isEmpty() && !injector.membersInjectorStore.hasTypeListeners())) {
+      return Initializables.of(instance);
+    }
 
-        InjectableReference<T> initializable = new InjectableReference<T>(injector, instance, source);
-        pendingInjection.put(instance, initializable);
-        return initializable;
+    InjectableReference<T> initializable = new InjectableReference<T>(injector, instance, source);
+    pendingInjection.put(instance, initializable);
+    return initializable;
+  }
+
+  /**
+   * Prepares member injectors for all injected instances. This prompts Guice to do static analysis
+   * on the injected instances.
+   */
+  void validateOustandingInjections(Errors errors) {
+    for (InjectableReference<?> reference : pendingInjection.values()) {
+      try {
+        reference.validate(errors);
+      } catch (ErrorsException e) {
+        errors.merge(e.getErrors());
+      }
+    }
+  }
+
+  /**
+   * Performs creation-time injections on all objects that require it. Whenever fulfilling an
+   * injection depends on another object that requires injection, we inject it first. If the two
+   * instances are codependent (directly or transitively), ordering of injection is arbitrary.
+   */
+  void injectAll(final Errors errors) {
+    // loop over a defensive copy since ensureInjected() mutates the set. Unfortunately, that copy
+    // is made complicated by a bug in IBM's JDK, wherein entrySet().toArray(Object[]) doesn't work
+    for (InjectableReference<?> reference : Lists.newArrayList(pendingInjection.values())) {
+      try {
+        reference.get(errors);
+      } catch (ErrorsException e) {
+        errors.merge(e.getErrors());
+      }
+    }
+
+    if (!pendingInjection.isEmpty()) {
+      throw new AssertionError("Failed to satisfy " + pendingInjection);
+    }
+
+    ready.countDown();
+  }
+
+  private class InjectableReference<T> implements Initializable<T> {
+    private final InjectorImpl injector;
+    private final T instance;
+    private final Object source;
+    private MembersInjectorImpl<T> membersInjector;
+
+    public InjectableReference(InjectorImpl injector, T instance, Object source) {
+      this.injector = injector;
+      this.instance = checkNotNull(instance, "instance");
+      this.source = checkNotNull(source, "source");
+    }
+
+    public void validate(Errors errors) throws ErrorsException {
+      @SuppressWarnings("unchecked") // the type of 'T' is a TypeLiteral<T>
+      TypeLiteral<T> type = TypeLiteral.get((Class<T>) instance.getClass());
+      membersInjector = injector.membersInjectorStore.get(type, errors.withSource(source));
     }
 
     /**
-     * Prepares member injectors for all injected instances. This prompts Guice to do static analysis
-     * on the injected instances.
+     * Reentrant. If {@code instance} was registered for injection at injector-creation time, this
+     * method will ensure that all its members have been injected before returning.
      */
-    void validateOustandingInjections(Errors errors) {
-        for (InjectableReference<?> reference : pendingInjection.values()) {
-            try {
-                reference.validate(errors);
-            } catch (ErrorsException e) {
-                errors.merge(e.getErrors());
-            }
+    public T get(Errors errors) throws ErrorsException {
+      if (ready.getCount() == 0) {
+        return instance;
+      }
+
+      // just wait for everything to be injected by another thread
+      if (Thread.currentThread() != creatingThread) {
+        try {
+          ready.await();
+          return instance;
+        } catch (InterruptedException e) {
+          // Give up, since we don't know if our injection is ready
+          throw new RuntimeException(e);
         }
+      }
+
+      // toInject needs injection, do it right away. we only do this once, even if it fails
+      if (pendingInjection.remove(instance) != null) {
+        membersInjector.injectAndNotify(instance, errors.withSource(source));
+      }
+
+      return instance;
     }
 
-    /**
-     * Performs creation-time injections on all objects that require it. Whenever fulfilling an
-     * injection depends on another object that requires injection, we inject it first. If the two
-     * instances are codependent (directly or transitively), ordering of injection is arbitrary.
-     */
-    void injectAll(final Errors errors) {
-        // loop over a defensive copy since ensureInjected() mutates the set. Unfortunately, that copy
-        // is made complicated by a bug in IBM's JDK, wherein entrySet().toArray(Object[]) doesn't work
-        for (InjectableReference<?> reference : Lists.newArrayList(pendingInjection.values())) {
-            try {
-                reference.get(errors);
-            } catch (ErrorsException e) {
-                errors.merge(e.getErrors());
-            }
-        }
-
-        if (!pendingInjection.isEmpty()) {
-            throw new AssertionError("Failed to satisfy " + pendingInjection);
-        }
-
-        ready.countDown();
+    @Override public String toString() {
+      return instance.toString();
     }
-
-    private class InjectableReference<T> implements Initializable<T> {
-        private final InjectorImpl injector;
-        private final T instance;
-        private final Object source;
-        private MembersInjectorImpl<T> membersInjector;
-
-        public InjectableReference(InjectorImpl injector, T instance, Object source) {
-            this.injector = injector;
-            this.instance = checkNotNull(instance, "instance");
-            this.source = checkNotNull(source, "source");
-        }
-
-        public void validate(Errors errors) throws ErrorsException {
-            @SuppressWarnings("unchecked") // the type of 'T' is a TypeLiteral<T>
-                    TypeLiteral<T> type = TypeLiteral.get((Class<T>) instance.getClass());
-            membersInjector = injector.membersInjectorStore.get(type, errors.withSource(source));
-        }
-
-        /**
-         * Reentrant. If {@code instance} was registered for injection at injector-creation time, this
-         * method will ensure that all its members have been injected before returning.
-         */
-        public T get(Errors errors) throws ErrorsException {
-            if (ready.getCount() == 0) {
-                return instance;
-            }
-
-            // just wait for everything to be injected by another thread
-            if (Thread.currentThread() != creatingThread) {
-                try {
-                    ready.await();
-                    return instance;
-                } catch (InterruptedException e) {
-                    // Give up, since we don't know if our injection is ready
-                    throw new RuntimeException(e);
-                }
-            }
-
-            // toInject needs injection, do it right away. we only do this once, even if it fails
-            if (pendingInjection.remove(instance) != null) {
-                membersInjector.injectAndNotify(instance, errors.withSource(source));
-            }
-
-            return instance;
-        }
-
-        @Override
-        public String toString() {
-            return instance.toString();
-        }
-    }
+  }
 }

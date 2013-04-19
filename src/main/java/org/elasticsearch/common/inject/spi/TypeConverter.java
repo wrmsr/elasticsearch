@@ -26,8 +26,8 @@ import org.elasticsearch.common.inject.TypeLiteral;
  */
 public interface TypeConverter {
 
-    /**
-     * Converts a string value. Throws an exception if a conversion error occurs.
-     */
-    Object convert(String value, TypeLiteral<?> toType);
+  /**
+   * Converts a string value. Throws an exception if a conversion error occurs.
+   */
+  Object convert(String value, TypeLiteral<?> toType);
 }

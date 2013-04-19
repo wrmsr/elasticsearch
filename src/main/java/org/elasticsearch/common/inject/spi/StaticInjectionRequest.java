@@ -16,12 +16,10 @@
 
 package org.elasticsearch.common.inject.spi;
 
-import org.elasticsearch.common.inject.Binder;
 import org.elasticsearch.common.inject.ConfigurationException;
-
+import org.elasticsearch.common.inject.Binder;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A request to inject the static fields and methods of a type. Requests are created
@@ -34,43 +32,43 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @since 2.0
  */
 public final class StaticInjectionRequest implements Element {
-    private final Object source;
-    private final Class<?> type;
+  private final Object source;
+  private final Class<?> type;
 
-    StaticInjectionRequest(Object source, Class<?> type) {
-        this.source = checkNotNull(source, "source");
-        this.type = checkNotNull(type, "type");
-    }
+  StaticInjectionRequest(Object source, Class<?> type) {
+    this.source = checkNotNull(source, "source");
+    this.type = checkNotNull(type, "type");
+  }
 
-    public Object getSource() {
-        return source;
-    }
+  public Object getSource() {
+    return source;
+  }
 
-    public Class<?> getType() {
-        return type;
-    }
+  public Class<?> getType() {
+    return type;
+  }
 
-    /**
-     * Returns the static methods and fields of {@code type} that will be injected to fulfill this
-     * request.
-     *
-     * @return a possibly empty set of injection points. The set has a specified iteration order. All
-     *         fields are returned and then all methods. Within the fields, supertype fields are returned
-     *         before subtype fields. Similarly, supertype methods are returned before subtype methods.
-     * @throws ConfigurationException if there is a malformed injection point on {@code type}, such as
-     *                                a field with multiple binding annotations. The exception's {@link
-     *                                ConfigurationException#getPartialValue() partial value} is a {@code Set<InjectionPoint>}
-     *                                of the valid injection points.
-     */
-    public Set<InjectionPoint> getInjectionPoints() throws ConfigurationException {
-        return InjectionPoint.forStaticMethodsAndFields(type);
-    }
+  /**
+   * Returns the static methods and fields of {@code type} that will be injected to fulfill this
+   * request.
+   *
+   * @return a possibly empty set of injection points. The set has a specified iteration order. All
+   *      fields are returned and then all methods. Within the fields, supertype fields are returned
+   *      before subtype fields. Similarly, supertype methods are returned before subtype methods.
+   * @throws ConfigurationException if there is a malformed injection point on {@code type}, such as
+   *      a field with multiple binding annotations. The exception's {@link
+   *      ConfigurationException#getPartialValue() partial value} is a {@code Set<InjectionPoint>}
+   *      of the valid injection points.
+   */
+  public Set<InjectionPoint> getInjectionPoints() throws ConfigurationException {
+    return InjectionPoint.forStaticMethodsAndFields(type);
+  }
 
-    public void applyTo(Binder binder) {
-        binder.withSource(getSource()).requestStaticInjection(type);
-    }
+  public void applyTo(Binder binder) {
+    binder.withSource(getSource()).requestStaticInjection(type);
+  }
 
-    public <T> T acceptVisitor(ElementVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+  public <T> T acceptVisitor(ElementVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

@@ -26,8 +26,8 @@ import org.elasticsearch.common.inject.internal.ErrorsException;
  */
 interface Initializable<T> {
 
-    /**
-     * Ensures the reference is initialized, then returns it.
-     */
-    T get(Errors errors) throws ErrorsException;
+  /**
+   * Ensures the reference is initialized, then returns it.
+   */
+  T get(Errors errors) throws ErrorsException;
 }

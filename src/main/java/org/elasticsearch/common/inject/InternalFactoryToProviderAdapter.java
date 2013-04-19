@@ -16,40 +16,42 @@
 
 package org.elasticsearch.common.inject;
 
-import org.elasticsearch.common.inject.internal.*;
+import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ErrorsException;
+import org.elasticsearch.common.inject.internal.InternalContext;
+import org.elasticsearch.common.inject.internal.InternalFactory;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
+import org.elasticsearch.common.inject.internal.SourceProvider;
 import org.elasticsearch.common.inject.spi.Dependency;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author crazybob@google.com (Bob Lee)
- */
+*/
 class InternalFactoryToProviderAdapter<T> implements InternalFactory<T> {
 
-    private final Initializable<Provider<? extends T>> initializable;
-    private final Object source;
+  private final Initializable<Provider<? extends T>> initializable;
+  private final Object source;
 
-    public InternalFactoryToProviderAdapter(Initializable<Provider<? extends T>> initializable) {
-        this(initializable, SourceProvider.UNKNOWN_SOURCE);
-    }
+  public InternalFactoryToProviderAdapter(Initializable<Provider<? extends T>> initializable) {
+    this(initializable, SourceProvider.UNKNOWN_SOURCE);
+  }
 
-    public InternalFactoryToProviderAdapter(
-            Initializable<Provider<? extends T>> initializable, Object source) {
-        this.initializable = checkNotNull(initializable, "provider");
-        this.source = checkNotNull(source, "source");
-    }
+  public InternalFactoryToProviderAdapter(
+      Initializable<Provider<? extends T>> initializable, Object source) {
+    this.initializable = checkNotNull(initializable, "provider");
+    this.source = checkNotNull(source, "source");
+  }
 
-    public T get(Errors errors, InternalContext context, Dependency<?> dependency)
-            throws ErrorsException {
-        try {
-            return errors.checkForNull(initializable.get(errors).get(), source, dependency);
-        } catch (RuntimeException userException) {
-            throw errors.withSource(source).errorInProvider(userException).toException();
-        }
+  public T get(Errors errors, InternalContext context, Dependency<?> dependency)
+      throws ErrorsException {
+    try {
+      return errors.checkForNull(initializable.get(errors).get(), source, dependency);
+    } catch (RuntimeException userException) {
+      throw errors.withSource(source).errorInProvider(userException).toException();
     }
+  }
 
-    @Override
-    public String toString() {
-        return initializable.toString();
-    }
+  @Override public String toString() {
+    return initializable.toString();
+  }
 }

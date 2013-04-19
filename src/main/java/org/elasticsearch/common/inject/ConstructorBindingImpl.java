@@ -16,86 +16,99 @@
 
 package org.elasticsearch.common.inject;
 
-import com.google.common.collect.ImmutableSet;
-import org.elasticsearch.common.inject.internal.*;
+import org.elasticsearch.common.inject.internal.BindingImpl;
+import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ErrorsException;
+import org.elasticsearch.common.inject.internal.ImmutableSet;
+import org.elasticsearch.common.inject.internal.InternalContext;
+import org.elasticsearch.common.inject.internal.InternalFactory;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkState;
+import org.elasticsearch.common.inject.internal.Scoping;
+import org.elasticsearch.common.inject.internal.ToStringBuilder;
 import org.elasticsearch.common.inject.spi.BindingTargetVisitor;
 import org.elasticsearch.common.inject.spi.ConstructorBinding;
 import org.elasticsearch.common.inject.spi.Dependency;
 import org.elasticsearch.common.inject.spi.InjectionPoint;
-
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkState;
 
 class ConstructorBindingImpl<T> extends BindingImpl<T> implements ConstructorBinding<T> {
 
-    private final Factory<T> factory;
+  private final Factory<T> factory;
 
-    private ConstructorBindingImpl(Injector injector, Key<T> key, Object source,
-                                   InternalFactory<? extends T> scopedFactory, Scoping scoping, Factory<T> factory) {
-        super(injector, key, source, scopedFactory, scoping);
-        this.factory = factory;
+  private ConstructorBindingImpl(Injector injector, Key<T> key, Object source,
+      InternalFactory<? extends T> scopedFactory, Scoping scoping, Factory<T> factory) {
+    super(injector, key, source, scopedFactory, scoping);
+    this.factory = factory;
+  }
+
+  static <T> ConstructorBindingImpl<T> create(
+      InjectorImpl injector, Key<T> key, Object source, Scoping scoping) {
+    Factory<T> factoryFactory = new Factory<T>();
+    InternalFactory<? extends T> scopedFactory
+        = Scopes.scope(key, injector, factoryFactory, scoping);
+    return new ConstructorBindingImpl<T>(
+        injector, key, source, scopedFactory, scoping, factoryFactory);
+  }
+
+  public void initialize(InjectorImpl injector, Errors errors) throws ErrorsException {
+    factory.constructorInjector = injector.constructors.get(getKey().getTypeLiteral(), errors);
+  }
+
+  public <V> V acceptTargetVisitor(BindingTargetVisitor<? super T, V> visitor) {
+    checkState(factory.constructorInjector != null, "not initialized");
+    return visitor.visit(this);
+  }
+
+  public InjectionPoint getConstructor() {
+    checkState(factory.constructorInjector != null, "Binding is not ready");
+    return factory.constructorInjector.getConstructionProxy().getInjectionPoint();
+  }
+
+  public Set<InjectionPoint> getInjectableMembers() {
+    checkState(factory.constructorInjector != null, "Binding is not ready");
+    return factory.constructorInjector.getInjectableMembers();
+  }
+
+  /*if[AOP]*/
+  public Map<Method, List<org.aopalliance.intercept.MethodInterceptor>> getMethodInterceptors() {
+    checkState(factory.constructorInjector != null, "Binding is not ready");
+    return factory.constructorInjector.getConstructionProxy().getMethodInterceptors();
+  }
+  /*end[AOP]*/
+
+  public Set<Dependency<?>> getDependencies() {
+    return Dependency.forInjectionPoints(new ImmutableSet.Builder<InjectionPoint>()
+        .add(getConstructor())
+        .addAll(getInjectableMembers())
+        .build());
+  }
+
+  public void applyTo(Binder binder) {
+    throw new UnsupportedOperationException("This element represents a synthetic binding.");
+  }
+
+  @Override public String toString() {
+    return new ToStringBuilder(ConstructorBinding.class)
+        .add("key", getKey())
+        .add("source", getSource())
+        .add("scope", getScoping())
+        .toString();
+  }
+
+  private static class Factory<T> implements InternalFactory<T> {
+    private ConstructorInjector<T> constructorInjector;
+
+    @SuppressWarnings("unchecked")
+    public T get(Errors errors, InternalContext context, Dependency<?> dependency)
+        throws ErrorsException {
+      checkState(constructorInjector != null, "Constructor not ready");
+
+      // This may not actually be safe because it could return a super type of T (if that's all the
+      // client needs), but it should be OK in practice thanks to the wonders of erasure.
+      return (T) constructorInjector.construct(errors, context, dependency.getKey().getRawType());
     }
-
-    static <T> ConstructorBindingImpl<T> create(
-            InjectorImpl injector, Key<T> key, Object source, Scoping scoping) {
-        Factory<T> factoryFactory = new Factory<T>();
-        InternalFactory<? extends T> scopedFactory
-                = Scopes.scope(key, injector, factoryFactory, scoping);
-        return new ConstructorBindingImpl<T>(
-                injector, key, source, scopedFactory, scoping, factoryFactory);
-    }
-
-    public void initialize(InjectorImpl injector, Errors errors) throws ErrorsException {
-        factory.constructorInjector = injector.constructors.get(getKey().getTypeLiteral(), errors);
-    }
-
-    public <V> V acceptTargetVisitor(BindingTargetVisitor<? super T, V> visitor) {
-        checkState(factory.constructorInjector != null, "not initialized");
-        return visitor.visit(this);
-    }
-
-    public InjectionPoint getConstructor() {
-        checkState(factory.constructorInjector != null, "Binding is not ready");
-        return factory.constructorInjector.getConstructionProxy().getInjectionPoint();
-    }
-
-    public Set<InjectionPoint> getInjectableMembers() {
-        checkState(factory.constructorInjector != null, "Binding is not ready");
-        return factory.constructorInjector.getInjectableMembers();
-    }
-
-    public Set<Dependency<?>> getDependencies() {
-        return Dependency.forInjectionPoints(new ImmutableSet.Builder<InjectionPoint>()
-                .add(getConstructor())
-                .addAll(getInjectableMembers())
-                .build());
-    }
-
-    public void applyTo(Binder binder) {
-        throw new UnsupportedOperationException("This element represents a synthetic binding.");
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(ConstructorBinding.class)
-                .add("key", getKey())
-                .add("source", getSource())
-                .add("scope", getScoping())
-                .toString();
-    }
-
-    private static class Factory<T> implements InternalFactory<T> {
-        private ConstructorInjector<T> constructorInjector;
-
-        @SuppressWarnings("unchecked")
-        public T get(Errors errors, InternalContext context, Dependency<?> dependency)
-                throws ErrorsException {
-            checkState(constructorInjector != null, "Constructor not ready");
-
-            // This may not actually be safe because it could return a super type of T (if that's all the
-            // client needs), but it should be OK in practice thanks to the wonders of erasure.
-            return (T) constructorInjector.construct(errors, context, dependency.getKey().getRawType());
-        }
-    }
+  }
 }

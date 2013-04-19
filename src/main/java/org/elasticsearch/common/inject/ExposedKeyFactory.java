@@ -16,7 +16,11 @@
 
 package org.elasticsearch.common.inject;
 
-import org.elasticsearch.common.inject.internal.*;
+import org.elasticsearch.common.inject.internal.BindingImpl;
+import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ErrorsException;
+import org.elasticsearch.common.inject.internal.InternalContext;
+import org.elasticsearch.common.inject.internal.InternalFactory;
 import org.elasticsearch.common.inject.spi.Dependency;
 import org.elasticsearch.common.inject.spi.PrivateElements;
 
@@ -25,32 +29,32 @@ import org.elasticsearch.common.inject.spi.PrivateElements;
  * injector.
  */
 class ExposedKeyFactory<T> implements InternalFactory<T>, BindingProcessor.CreationListener {
-    private final Key<T> key;
-    private final PrivateElements privateElements;
-    private BindingImpl<T> delegate;
+  private final Key<T> key;
+  private final PrivateElements privateElements;
+  private BindingImpl<T> delegate;
 
-    public ExposedKeyFactory(Key<T> key, PrivateElements privateElements) {
-        this.key = key;
-        this.privateElements = privateElements;
+  public ExposedKeyFactory(Key<T> key, PrivateElements privateElements) {
+    this.key = key;
+    this.privateElements = privateElements;
+  }
+
+  public void notify(Errors errors) {
+    InjectorImpl privateInjector = (InjectorImpl) privateElements.getInjector();
+    BindingImpl<T> explicitBinding = privateInjector.state.getExplicitBinding(key);
+
+    // validate that the child injector has its own factory. If the getInternalFactory() returns
+    // this, then that child injector doesn't have a factory (and getExplicitBinding has returned
+    // its parent's binding instead
+    if (explicitBinding.getInternalFactory() == this) {
+      errors.withSource(explicitBinding.getSource()).exposedButNotBound(key);
+      return;
     }
 
-    public void notify(Errors errors) {
-        InjectorImpl privateInjector = (InjectorImpl) privateElements.getInjector();
-        BindingImpl<T> explicitBinding = privateInjector.state.getExplicitBinding(key);
+    this.delegate = explicitBinding;
+  }
 
-        // validate that the child injector has its own factory. If the getInternalFactory() returns
-        // this, then that child injector doesn't have a factory (and getExplicitBinding has returned
-        // its parent's binding instead
-        if (explicitBinding.getInternalFactory() == this) {
-            errors.withSource(explicitBinding.getSource()).exposedButNotBound(key);
-            return;
-        }
-
-        this.delegate = explicitBinding;
-    }
-
-    public T get(Errors errors, InternalContext context, Dependency<?> dependency)
-            throws ErrorsException {
-        return delegate.getInternalFactory().get(errors, context, dependency);
-    }
+  public T get(Errors errors, InternalContext context, Dependency<?> dependency)
+      throws ErrorsException {
+    return delegate.getInternalFactory().get(errors, context, dependency);
+  }
 }

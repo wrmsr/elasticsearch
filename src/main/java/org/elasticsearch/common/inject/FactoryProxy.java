@@ -17,7 +17,11 @@
 
 package org.elasticsearch.common.inject;
 
-import org.elasticsearch.common.inject.internal.*;
+import org.elasticsearch.common.inject.internal.Errors;
+import org.elasticsearch.common.inject.internal.ErrorsException;
+import org.elasticsearch.common.inject.internal.InternalContext;
+import org.elasticsearch.common.inject.internal.InternalFactory;
+import org.elasticsearch.common.inject.internal.ToStringBuilder;
 import org.elasticsearch.common.inject.spi.Dependency;
 
 /**
@@ -25,38 +29,37 @@ import org.elasticsearch.common.inject.spi.Dependency;
  */
 class FactoryProxy<T> implements InternalFactory<T>, BindingProcessor.CreationListener {
 
-    private final InjectorImpl injector;
-    private final Key<T> key;
-    private final Key<? extends T> targetKey;
-    private final Object source;
+  private final InjectorImpl injector;
+  private final Key<T> key;
+  private final Key<? extends T> targetKey;
+  private final Object source;
 
-    private InternalFactory<? extends T> targetFactory;
+  private InternalFactory<? extends T> targetFactory;
 
-    FactoryProxy(InjectorImpl injector, Key<T> key, Key<? extends T> targetKey, Object source) {
-        this.injector = injector;
-        this.key = key;
-        this.targetKey = targetKey;
-        this.source = source;
+  FactoryProxy(InjectorImpl injector, Key<T> key, Key<? extends T> targetKey, Object source) {
+    this.injector = injector;
+    this.key = key;
+    this.targetKey = targetKey;
+    this.source = source;
+  }
+
+  public void notify(final Errors errors) {
+    try {
+      targetFactory = injector.getInternalFactory(targetKey, errors.withSource(source));
+    } catch (ErrorsException e) {
+      errors.merge(e.getErrors());
     }
+  }
 
-    public void notify(final Errors errors) {
-        try {
-            targetFactory = injector.getInternalFactory(targetKey, errors.withSource(source));
-        } catch (ErrorsException e) {
-            errors.merge(e.getErrors());
-        }
-    }
+  public T get(Errors errors, InternalContext context, Dependency<?> dependency)
+      throws ErrorsException {
+    return targetFactory.get(errors.withSource(targetKey), context, dependency);
+  }
 
-    public T get(Errors errors, InternalContext context, Dependency<?> dependency)
-            throws ErrorsException {
-        return targetFactory.get(errors.withSource(targetKey), context, dependency);
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(FactoryProxy.class)
-                .add("key", key)
-                .add("provider", targetFactory)
-                .toString();
-    }
+  @Override public String toString() {
+    return new ToStringBuilder(FactoryProxy.class)
+        .add("key", key)
+        .add("provider", targetFactory)
+        .toString();
+  }
 }

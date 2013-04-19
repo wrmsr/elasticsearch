@@ -16,13 +16,12 @@
 
 package org.elasticsearch.common.inject;
 
-import com.google.common.collect.ImmutableSet;
 import org.elasticsearch.common.inject.internal.ConstructionContext;
 import org.elasticsearch.common.inject.internal.Errors;
 import org.elasticsearch.common.inject.internal.ErrorsException;
+import org.elasticsearch.common.inject.internal.ImmutableSet;
 import org.elasticsearch.common.inject.internal.InternalContext;
 import org.elasticsearch.common.inject.spi.InjectionPoint;
-
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -33,77 +32,77 @@ import java.lang.reflect.InvocationTargetException;
  */
 class ConstructorInjector<T> {
 
-    private final ImmutableSet<InjectionPoint> injectableMembers;
-    private final SingleParameterInjector<?>[] parameterInjectors;
-    private final ConstructionProxy<T> constructionProxy;
-    private final MembersInjectorImpl<T> membersInjector;
+  private final ImmutableSet<InjectionPoint> injectableMembers;
+  private final SingleParameterInjector<?>[] parameterInjectors;
+  private final ConstructionProxy<T> constructionProxy;
+  private final MembersInjectorImpl<T> membersInjector;
 
-    ConstructorInjector(ImmutableSet<InjectionPoint> injectableMembers,
-                        ConstructionProxy<T> constructionProxy,
-                        SingleParameterInjector<?>[] parameterInjectors,
-                        MembersInjectorImpl<T> membersInjector)
-            throws ErrorsException {
-        this.injectableMembers = injectableMembers;
-        this.constructionProxy = constructionProxy;
-        this.parameterInjectors = parameterInjectors;
-        this.membersInjector = membersInjector;
+  ConstructorInjector(ImmutableSet<InjectionPoint> injectableMembers,
+      ConstructionProxy<T> constructionProxy,
+      SingleParameterInjector<?>[] parameterInjectors,
+      MembersInjectorImpl<T> membersInjector)
+      throws ErrorsException {
+    this.injectableMembers = injectableMembers;
+    this.constructionProxy = constructionProxy;
+    this.parameterInjectors = parameterInjectors;
+    this.membersInjector = membersInjector;
+  }
+
+  public ImmutableSet<InjectionPoint> getInjectableMembers() {
+    return injectableMembers;
+  }
+
+  ConstructionProxy<T> getConstructionProxy() {
+    return constructionProxy;
+  }
+
+  /**
+   * Construct an instance. Returns {@code Object} instead of {@code T} because
+   * it may return a proxy.
+   */
+  Object construct(Errors errors, InternalContext context, Class<?> expectedType)
+      throws ErrorsException {
+    ConstructionContext<T> constructionContext = context.getConstructionContext(this);
+
+    // We have a circular reference between constructors. Return a proxy.
+    if (constructionContext.isConstructing()) {
+      // TODO (crazybob): if we can't proxy this object, can we proxy the other object?
+      return constructionContext.createProxy(errors, expectedType);
     }
 
-    public ImmutableSet<InjectionPoint> getInjectableMembers() {
-        return injectableMembers;
+    // If we're re-entering this factory while injecting fields or methods,
+    // return the same instance. This prevents infinite loops.
+    T t = constructionContext.getCurrentReference();
+    if (t != null) {
+      return t;
     }
 
-    ConstructionProxy<T> getConstructionProxy() {
-        return constructionProxy;
+    try {
+      // First time through...
+      constructionContext.startConstruction();
+      try {
+        Object[] parameters = SingleParameterInjector.getAll(errors, context, parameterInjectors);
+        t = constructionProxy.newInstance(parameters);
+        constructionContext.setProxyDelegates(t);
+      } finally {
+        constructionContext.finishConstruction();
+      }
+
+      // Store reference. If an injector re-enters this factory, they'll get the same reference.
+      constructionContext.setCurrentReference(t);
+
+      membersInjector.injectMembers(t, errors, context);
+      membersInjector.notifyListeners(t, errors);
+
+      return t;
+    } catch (InvocationTargetException userException) {
+      Throwable cause = userException.getCause() != null
+          ? userException.getCause()
+          : userException;
+      throw errors.withSource(constructionProxy.getInjectionPoint())
+          .errorInjectingConstructor(cause).toException();
+    } finally {
+      constructionContext.removeCurrentReference();
     }
-
-    /**
-     * Construct an instance. Returns {@code Object} instead of {@code T} because
-     * it may return a proxy.
-     */
-    Object construct(Errors errors, InternalContext context, Class<?> expectedType)
-            throws ErrorsException {
-        ConstructionContext<T> constructionContext = context.getConstructionContext(this);
-
-        // We have a circular reference between constructors. Return a proxy.
-        if (constructionContext.isConstructing()) {
-            // TODO (crazybob): if we can't proxy this object, can we proxy the other object?
-            return constructionContext.createProxy(errors, expectedType);
-        }
-
-        // If we're re-entering this factory while injecting fields or methods,
-        // return the same instance. This prevents infinite loops.
-        T t = constructionContext.getCurrentReference();
-        if (t != null) {
-            return t;
-        }
-
-        try {
-            // First time through...
-            constructionContext.startConstruction();
-            try {
-                Object[] parameters = SingleParameterInjector.getAll(errors, context, parameterInjectors);
-                t = constructionProxy.newInstance(parameters);
-                constructionContext.setProxyDelegates(t);
-            } finally {
-                constructionContext.finishConstruction();
-            }
-
-            // Store reference. If an injector re-enters this factory, they'll get the same reference.
-            constructionContext.setCurrentReference(t);
-
-            membersInjector.injectMembers(t, errors, context);
-            membersInjector.notifyListeners(t, errors);
-
-            return t;
-        } catch (InvocationTargetException userException) {
-            Throwable cause = userException.getCause() != null
-                    ? userException.getCause()
-                    : userException;
-            throw errors.withSource(constructionProxy.getInjectionPoint())
-                    .errorInjectingConstructor(cause).toException();
-        } finally {
-            constructionContext.removeCurrentReference();
-        }
-    }
+  }
 }

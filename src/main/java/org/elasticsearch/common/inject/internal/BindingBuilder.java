@@ -16,18 +16,19 @@
 
 package org.elasticsearch.common.inject.internal;
 
-import com.google.common.collect.ImmutableSet;
-import org.elasticsearch.common.inject.*;
+import org.elasticsearch.common.inject.Binder;
+import org.elasticsearch.common.inject.ConfigurationException;
+import org.elasticsearch.common.inject.Key;
+import org.elasticsearch.common.inject.Provider;
+import org.elasticsearch.common.inject.TypeLiteral;
 import org.elasticsearch.common.inject.binder.AnnotatedBindingBuilder;
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import org.elasticsearch.common.inject.spi.Element;
 import org.elasticsearch.common.inject.spi.InjectionPoint;
 import org.elasticsearch.common.inject.spi.Message;
-
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Bind a non-constant key.
@@ -35,100 +36,99 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author jessewilson@google.com (Jesse Wilson)
  */
 public class BindingBuilder<T> extends AbstractBindingBuilder<T>
-        implements AnnotatedBindingBuilder<T> {
+    implements AnnotatedBindingBuilder<T> {
 
-    public BindingBuilder(Binder binder, List<Element> elements, Object source, Key<T> key) {
-        super(binder, elements, source, key);
-    }
+  public BindingBuilder(Binder binder, List<Element> elements, Object source, Key<T> key) {
+    super(binder, elements, source, key);
+  }
 
-    public BindingBuilder<T> annotatedWith(Class<? extends Annotation> annotationType) {
-        annotatedWithInternal(annotationType);
-        return this;
-    }
+  public BindingBuilder<T> annotatedWith(Class<? extends Annotation> annotationType) {
+    annotatedWithInternal(annotationType);
+    return this;
+  }
 
-    public BindingBuilder<T> annotatedWith(Annotation annotation) {
-        annotatedWithInternal(annotation);
-        return this;
-    }
+  public BindingBuilder<T> annotatedWith(Annotation annotation) {
+    annotatedWithInternal(annotation);
+    return this;
+  }
 
-    public BindingBuilder<T> to(Class<? extends T> implementation) {
-        return to(Key.get(implementation));
-    }
+  public BindingBuilder<T> to(Class<? extends T> implementation) {
+    return to(Key.get(implementation));
+  }
 
-    public BindingBuilder<T> to(TypeLiteral<? extends T> implementation) {
-        return to(Key.get(implementation));
-    }
+  public BindingBuilder<T> to(TypeLiteral<? extends T> implementation) {
+    return to(Key.get(implementation));
+  }
 
-    public BindingBuilder<T> to(Key<? extends T> linkedKey) {
-        checkNotNull(linkedKey, "linkedKey");
-        checkNotTargetted();
-        BindingImpl<T> base = getBinding();
-        setBinding(new LinkedBindingImpl<T>(
-                base.getSource(), base.getKey(), base.getScoping(), linkedKey));
-        return this;
-    }
+  public BindingBuilder<T> to(Key<? extends T> linkedKey) {
+    checkNotNull(linkedKey, "linkedKey");
+    checkNotTargetted();
+    BindingImpl<T> base = getBinding();
+    setBinding(new LinkedBindingImpl<T>(
+        base.getSource(), base.getKey(), base.getScoping(), linkedKey));
+    return this;
+  }
 
-    public void toInstance(T instance) {
-        checkNotTargetted();
+  public void toInstance(T instance) {
+    checkNotTargetted();
 
-        // lookup the injection points, adding any errors to the binder's errors list
-        Set<InjectionPoint> injectionPoints;
-        if (instance != null) {
-            try {
-                injectionPoints = InjectionPoint.forInstanceMethodsAndFields(instance.getClass());
-            } catch (ConfigurationException e) {
-                for (Message message : e.getErrorMessages()) {
-                    binder.addError(message);
-                }
-                injectionPoints = e.getPartialValue();
-            }
-        } else {
-            binder.addError(BINDING_TO_NULL);
-            injectionPoints = ImmutableSet.of();
+    // lookup the injection points, adding any errors to the binder's errors list
+    Set<InjectionPoint> injectionPoints;
+    if (instance != null) {
+      try {
+        injectionPoints = InjectionPoint.forInstanceMethodsAndFields(instance.getClass());
+      } catch (ConfigurationException e) {
+        for (Message message : e.getErrorMessages()) {
+          binder.addError(message);
         }
-
-        BindingImpl<T> base = getBinding();
-        setBinding(new InstanceBindingImpl<T>(
-                base.getSource(), base.getKey(), base.getScoping(), injectionPoints, instance));
+        injectionPoints = e.getPartialValue();
+      }
+    } else {
+      binder.addError(BINDING_TO_NULL);
+      injectionPoints = ImmutableSet.of();
     }
 
-    public BindingBuilder<T> toProvider(Provider<? extends T> provider) {
-        checkNotNull(provider, "provider");
-        checkNotTargetted();
+    BindingImpl<T> base = getBinding();
+    setBinding(new InstanceBindingImpl<T>(
+        base.getSource(), base.getKey(), base.getScoping(), injectionPoints, instance));
+  }
 
-        // lookup the injection points, adding any errors to the binder's errors list
-        Set<InjectionPoint> injectionPoints;
-        try {
-            injectionPoints = InjectionPoint.forInstanceMethodsAndFields(provider.getClass());
-        } catch (ConfigurationException e) {
-            for (Message message : e.getErrorMessages()) {
-                binder.addError(message);
-            }
-            injectionPoints = e.getPartialValue();
-        }
+  public BindingBuilder<T> toProvider(Provider<? extends T> provider) {
+    checkNotNull(provider, "provider");
+    checkNotTargetted();
 
-        BindingImpl<T> base = getBinding();
-        setBinding(new ProviderInstanceBindingImpl<T>(
-                base.getSource(), base.getKey(), base.getScoping(), injectionPoints, provider));
-        return this;
+    // lookup the injection points, adding any errors to the binder's errors list
+    Set<InjectionPoint> injectionPoints;
+    try {
+      injectionPoints = InjectionPoint.forInstanceMethodsAndFields(provider.getClass());
+    } catch (ConfigurationException e) {
+      for (Message message : e.getErrorMessages()) {
+        binder.addError(message);
+      }
+      injectionPoints = e.getPartialValue();
     }
 
-    public BindingBuilder<T> toProvider(Class<? extends Provider<? extends T>> providerType) {
-        return toProvider(Key.get(providerType));
-    }
+    BindingImpl<T> base = getBinding();
+    setBinding(new ProviderInstanceBindingImpl<T>(
+        base.getSource(), base.getKey(), base.getScoping(), injectionPoints, provider));
+    return this;
+  }
 
-    public BindingBuilder<T> toProvider(Key<? extends Provider<? extends T>> providerKey) {
-        checkNotNull(providerKey, "providerKey");
-        checkNotTargetted();
+  public BindingBuilder<T> toProvider(Class<? extends Provider<? extends T>> providerType) {
+    return toProvider(Key.get(providerType));
+  }
 
-        BindingImpl<T> base = getBinding();
-        setBinding(new LinkedProviderBindingImpl<T>(
-                base.getSource(), base.getKey(), base.getScoping(), providerKey));
-        return this;
-    }
+  public BindingBuilder<T> toProvider(Key<? extends Provider<? extends T>> providerKey) {
+    checkNotNull(providerKey, "providerKey");
+    checkNotTargetted();
 
-    @Override
-    public String toString() {
-        return "BindingBuilder<" + getBinding().getKey().getTypeLiteral() + ">";
-    }
+    BindingImpl<T> base = getBinding();
+    setBinding(new LinkedProviderBindingImpl<T>(
+        base.getSource(), base.getKey(), base.getScoping(), providerKey));
+    return this;
+  }
+
+  @Override public String toString() {
+    return "BindingBuilder<" + getBinding().getKey().getTypeLiteral() + ">";
+  }
 }

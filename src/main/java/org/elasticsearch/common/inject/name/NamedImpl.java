@@ -16,44 +16,43 @@
 
 package org.elasticsearch.common.inject.name;
 
+import static org.elasticsearch.common.inject.internal.Preconditions.checkNotNull;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 class NamedImpl implements Named, Serializable {
 
-    private final String value;
+  private final String value;
 
-    public NamedImpl(String value) {
-        this.value = checkNotNull(value, "name");
+  public NamedImpl(String value) {
+    this.value = checkNotNull(value, "name");
+  }
+
+  public String value() {
+    return this.value;
+  }
+
+  public int hashCode() {
+    // This is specified in java.lang.Annotation.
+    return (127 * "value".hashCode()) ^ value.hashCode();
+  }
+
+  public boolean equals(Object o) {
+    if (!(o instanceof Named)) {
+      return false;
     }
 
-    public String value() {
-        return this.value;
-    }
+    Named other = (Named) o;
+    return value.equals(other.value());
+  }
 
-    public int hashCode() {
-        // This is specified in java.lang.Annotation.
-        return (127 * "value".hashCode()) ^ value.hashCode();
-    }
+  public String toString() {
+    return "@" + Named.class.getName() + "(value=" + value + ")";
+  }
 
-    public boolean equals(Object o) {
-        if (!(o instanceof Named)) {
-            return false;
-        }
+  public Class<? extends Annotation> annotationType() {
+    return Named.class;
+  }
 
-        Named other = (Named) o;
-        return value.equals(other.value());
-    }
-
-    public String toString() {
-        return "@" + Named.class.getName() + "(value=" + value + ")";
-    }
-
-    public Class<? extends Annotation> annotationType() {
-        return Named.class;
-    }
-
-    private static final long serialVersionUID = 0;
+  private static final long serialVersionUID = 0;
 }
